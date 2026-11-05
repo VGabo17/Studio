@@ -8,13 +8,19 @@ import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { DeliveryUploaderModal } from '@/components/DeliveryUploaderModal';
 import { DiscordEmbedAuditModal } from '@/components/DiscordEmbedAuditModal';
-import { Project, ProjectStatus, User } from '@/lib/types';
+import { Project, ProjectStatus, User, UserRole } from '@/lib/types';
+import {
+  isStaff,
+  canCompleteProject,
+  canUploadDeliveries,
+  canSetPrice,
+  canUpdateProgress,
+} from '@/lib/permissions';
 import {
   Shield,
   UploadCloud,
   Sliders,
   DollarSign,
-  Layers,
   Sparkles,
   Clock,
   CheckCircle2,
@@ -25,6 +31,8 @@ import {
   Terminal,
   Server,
   Bot,
+  MessageSquare,
+  Lock,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
@@ -92,7 +100,7 @@ export default function AdminPage() {
       }
       setUser(authData.user);
 
-      if (authData.user.role === 'admin') {
+      if (isStaff(authData.user.role)) {
         const prjRes = await fetch('/api/projects');
         const prjData = await prjRes.json();
         if (prjData.success) {
@@ -120,7 +128,7 @@ export default function AdminPage() {
         }
         setUser(authData.user);
 
-        if (authData.user.role === 'admin') {
+        if (isStaff(authData.user.role)) {
           const prjRes = await fetch('/api/projects');
           const prjData = await prjRes.json();
           if (active && prjData.success) {
@@ -145,11 +153,11 @@ export default function AdminPage() {
     router.push('/');
   };
 
-  const handleSwitchToAdmin = async () => {
+  const handleSwitchPersona = async (role: UserRole) => {
     await fetch('/api/auth/quick-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ persona: 'admin' }),
+      body: JSON.stringify({ persona: role }),
     });
     fetchAdminData();
   };
@@ -191,6 +199,12 @@ export default function AdminPage() {
     }
   };
 
+  const userRole = user?.role || 'client';
+  const staffMember = isStaff(userRole);
+  const canComplete = canCompleteProject(userRole);
+  const canUpload = canUploadDeliveries(userRole);
+  const canPrice = canSetPrice(userRole);
+
   const totalRevenue = projects.reduce((acc, p) => acc + (p.price || 0), 0);
   const totalDeliveries = projects.reduce((acc, p) => acc + (p.deliveries?.length || 0), 0);
 
@@ -200,30 +214,33 @@ export default function AdminPage() {
         user={user}
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
-        onSwitchPersona={(role) => {
-          if (role === 'admin') handleSwitchToAdmin();
-          else router.push('/dashboard');
-        }}
+        onSwitchPersona={handleSwitchPersona}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Verification Check: Non-Admin Guard */}
-        {user?.role !== 'admin' ? (
+        {!staffMember ? (
           <div className="p-12 rounded-3xl bg-[#120A21] border border-amber-500/30 text-center max-w-lg mx-auto shadow-[0_0_35px_rgba(251,191,36,0.15)] my-12">
             <div className="w-14 h-14 rounded-full bg-amber-950/60 border border-amber-500/50 flex items-center justify-center text-amber-400 mx-auto mb-4">
               <Shield className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Acceso Administrativo Restringido</h2>
+            <h2 className="text-xl font-bold text-white mb-2">Panel Restringido a Miembros del Staff</h2>
             <p className="text-xs text-purple-300/70 mb-6 leading-relaxed">
-              El panel de administración está reservado para los Discord IDs configurados en <code className="text-amber-400 font-mono">ADMIN_DISCORD_IDS</code>. Puedes cambiar a la cuenta admin de prueba para verificar todas las funciones ahora mismo:
+              Este panel requiere un rol de staff autorizado (<code className="text-amber-400 font-mono">admin</code>, <code className="text-[#C084FC] font-mono">developer_senior</code>, <code className="text-cyan-400 font-mono">developer_junior</code> o <code className="text-emerald-400 font-mono">support</code>).
             </p>
-            <button
-              onClick={handleSwitchToAdmin}
-              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-bold text-xs rounded-xl shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all flex items-center justify-center gap-2 mx-auto"
-            >
-              <Sparkles className="w-4 h-4" />
-              Ingresar como AlexDev (Admin Lead)
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <button
+                onClick={() => handleSwitchPersona('developer_senior')}
+                className="px-4 py-2.5 bg-[#C084FC] text-black font-bold text-xs rounded-xl shadow-sm"
+              >
+                Probar como Dev Senior
+              </button>
+              <button
+                onClick={() => handleSwitchPersona('admin')}
+                className="px-4 py-2.5 bg-amber-400 text-black font-bold text-xs rounded-xl shadow-sm"
+              >
+                Probar como Admin
+              </button>
+            </div>
           </div>
         ) : (
           <div>
@@ -235,12 +252,17 @@ export default function AdminPage() {
                     <Shield className="w-4 h-4" />
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                    Panel de Administración del Estudio
+                    Panel de Gestión & Staff del Estudio
                   </h1>
                 </div>
-                <p className="text-xs text-purple-300/70">
-                  Control maestro de proyectos, actualización de estados en Discord y subida de ejecutables a Cloudflare R2.
-                </p>
+                <div className="flex items-center gap-2 text-xs text-purple-300/70">
+                  <span>Tu rol activo:</span>
+                  <span className="font-mono font-bold text-[#C084FC] uppercase bg-[#120A21] px-2 py-0.5 rounded border border-[#261442]">
+                    {userRole}
+                  </span>
+                  <span>·</span>
+                  <span>Permisos granulares en vigor</span>
+                </div>
               </div>
 
               <div className="flex items-center gap-3">
@@ -251,16 +273,18 @@ export default function AdminPage() {
                   <Send className="w-3.5 h-3.5 text-[#C084FC]" />
                   Auditoría Webhooks (#C084FC)
                 </button>
-                <button
-                  onClick={() => {
-                    setSelectedProjectIdForUpload(projects[0]?.id);
-                    setUploaderOpen(true);
-                  }}
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#9333EA] to-[#C084FC] hover:from-[#A855F7] hover:to-[#D8B4FE] text-white font-semibold text-xs rounded-xl shadow-[0_0_20px_rgba(192,132,252,0.3)] transition-all flex items-center gap-2"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                  Subir Entrega a R2
-                </button>
+                {canUpload && (
+                  <button
+                    onClick={() => {
+                      setSelectedProjectIdForUpload(projects[0]?.id);
+                      setUploaderOpen(true);
+                    }}
+                    className="px-5 py-2.5 bg-gradient-to-r from-[#9333EA] to-[#C084FC] hover:from-[#A855F7] hover:to-[#D8B4FE] text-white font-semibold text-xs rounded-xl shadow-[0_0_20px_rgba(192,132,252,0.3)] transition-all flex items-center gap-2"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                    Subir Build
+                  </button>
+                )}
               </div>
             </div>
 
@@ -271,7 +295,7 @@ export default function AdminPage() {
                 <div className="text-2xl font-extrabold text-emerald-400 font-mono tabular-nums">
                   ${totalRevenue.toLocaleString()} USD
                 </div>
-                <div className="text-[11px] text-purple-300/60 mt-1">Total de presupuestos D1</div>
+                <div className="text-[11px] text-purple-300/60 mt-1">Total de proyectos registrados</div>
               </div>
 
               <div className="p-5 rounded-2xl bg-[#120A21] border border-[#261442]">
@@ -279,23 +303,23 @@ export default function AdminPage() {
                 <div className="text-2xl font-extrabold text-white font-mono tabular-nums">
                   {projects.length}
                 </div>
-                <div className="text-[11px] text-purple-300/60 mt-1">Registros en tabla projects</div>
+                <div className="text-[11px] text-purple-300/60 mt-1">Trabajos gestionados</div>
               </div>
 
               <div className="p-5 rounded-2xl bg-[#120A21] border border-[#261442]">
-                <div className="text-xs font-medium text-purple-400 mb-1">Entregas en R2</div>
+                <div className="text-xs font-medium text-purple-400 mb-1">Builds Publicadas</div>
                 <div className="text-2xl font-extrabold text-[#C084FC] font-mono tabular-nums">
                   {totalDeliveries}
                 </div>
-                <div className="text-[11px] text-purple-300/60 mt-1">Binarios .jar y .zip</div>
+                <div className="text-[11px] text-purple-300/60 mt-1">Archivos .jar y .zip seguros</div>
               </div>
 
               <div className="p-5 rounded-2xl bg-[#120A21] border border-[#261442]">
-                <div className="text-xs font-medium text-purple-400 mb-1">Notificaciones Webhook</div>
-                <div className="text-2xl font-extrabold text-[#C084FC] font-mono tabular-nums">
-                  Activas
+                <div className="text-xs font-medium text-purple-400 mb-1">Sistema de Roles</div>
+                <div className="text-2xl font-extrabold text-emerald-400 font-mono tabular-nums">
+                  Granular
                 </div>
-                <div className="text-[11px] text-purple-300/60 mt-1">Embeds lila #C084FC</div>
+                <div className="text-[11px] text-purple-300/60 mt-1">5 niveles de privilegios</div>
               </div>
             </div>
 
@@ -315,7 +339,7 @@ export default function AdminPage() {
                       <th className="p-4">Título & Servicio</th>
                       <th className="p-4">Estado</th>
                       <th className="p-4">Progreso</th>
-                      <th className="p-4">Precio</th>
+                      <th className="p-4">Tarifa</th>
                       <th className="p-4 text-right">Acciones</th>
                     </tr>
                   </thead>
@@ -362,7 +386,7 @@ export default function AdminPage() {
                             </div>
                           </td>
                           <td className="p-4 font-mono text-emerald-400 font-semibold whitespace-nowrap">
-                            {p.price ? `$${p.price}` : '—'}
+                            {p.price ? `$${p.price} USD` : '—'}
                           </td>
                           <td className="p-4 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2">
@@ -374,21 +398,23 @@ export default function AdminPage() {
                                 <Sliders className="w-3.5 h-3.5" />
                                 <span>Ajustar</span>
                               </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedProjectIdForUpload(p.id);
-                                  setUploaderOpen(true);
-                                }}
-                                className="px-2.5 py-1.5 rounded-lg bg-[#261442] hover:bg-[#C084FC] hover:text-black text-purple-200 transition-colors flex items-center gap-1 font-medium"
-                                title="Subir entrega .jar / .zip"
-                              >
-                                <UploadCloud className="w-3.5 h-3.5" />
-                                <span>R2</span>
-                              </button>
+                              {canUpload && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedProjectIdForUpload(p.id);
+                                    setUploaderOpen(true);
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-[#261442] hover:bg-[#C084FC] hover:text-black text-purple-200 transition-colors flex items-center gap-1 font-medium"
+                                  title="Subir entrega"
+                                >
+                                  <UploadCloud className="w-3.5 h-3.5" />
+                                  <span>Build</span>
+                                </button>
+                              )}
                               <Link
                                 href={`/dashboard/project/${p.id}`}
                                 className="p-1.5 rounded-lg hover:bg-[#261442] text-purple-400 hover:text-white transition-colors"
-                                title="Ver vista detallada"
+                                title="Ver vista detallada y chat"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </Link>
@@ -402,7 +428,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Edit Project Modal / Drawer */}
+            {/* Edit Project Modal */}
             {editingProject && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
                 <div className="relative w-full max-w-md bg-[#120A21] border border-[#261442] rounded-2xl shadow-[0_0_40px_rgba(192,132,252,0.3)] overflow-hidden">
@@ -437,12 +463,18 @@ export default function AdminPage() {
                         <option value="pending">⏳ Pendiente de Aprobación</option>
                         <option value="in_development">🛠️ En Desarrollo Activo</option>
                         <option value="testing">🧪 Fase de Pruebas (QA)</option>
-                        <option value="completed">✅ Completado & Entregado</option>
-                        <option value="cancelled">❌ Cancelado</option>
+                        <option value="completed" disabled={!canComplete}>
+                          {canComplete ? '✅ Completado & Entregado' : '🔒 Completado (Solo Dev Senior / Admin)'}
+                        </option>
+                        <option value="cancelled" disabled={userRole !== 'admin'}>
+                          {userRole === 'admin' ? '❌ Cancelado' : '🔒 Cancelado (Solo Admin)'}
+                        </option>
                       </select>
-                      <p className="text-[10px] text-purple-400/60 mt-1">
-                        * Al cambiar de estado, se disparará automáticamente el webhook de Discord (#C084FC).
-                      </p>
+                      {!canComplete && editStatus === 'completed' && (
+                        <p className="text-[10px] text-amber-400 mt-1">
+                          * Requiere rol Developer Senior o Admin para marcar como completado.
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -457,25 +489,34 @@ export default function AdminPage() {
                       <input
                         type="range"
                         min="0"
-                        max="100"
+                        max={userRole === 'developer_junior' ? 85 : 100}
                         value={editProgress}
                         onChange={(e) => setEditProgress(Number(e.target.value))}
                         className="w-full accent-[#C084FC] bg-[#08050E] h-2 rounded-lg cursor-pointer"
                       />
+                      {userRole === 'developer_junior' && (
+                        <p className="text-[10px] text-cyan-400 mt-1">
+                          * Como Developer Junior tu límite de avance es 85% (Fase de Pruebas).
+                        </p>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-purple-200 mb-1.5">
-                        Presupuesto Acordado (USD)
+                      <label className="block text-xs font-medium text-purple-200 mb-1.5 flex items-center justify-between">
+                        <span>Tarifa Acordada (USD)</span>
+                        {!canPrice && <span className="text-[10px] text-purple-400 font-mono">Solo lectura (Admin)</span>}
                       </label>
                       <input
                         type="number"
                         min="0"
-                        step="10"
+                        step="5"
+                        disabled={!canPrice}
                         value={editPrice}
                         onChange={(e) => setEditPrice(e.target.value)}
-                        placeholder="Ej. 350"
-                        className="w-full px-3.5 py-2.5 bg-[#08050E] border border-[#261442] rounded-xl text-xs text-white font-mono focus:outline-none focus:border-[#C084FC]"
+                        placeholder="Ej. 45"
+                        className={`w-full px-3.5 py-2.5 bg-[#08050E] border border-[#261442] rounded-xl text-xs text-white font-mono focus:outline-none focus:border-[#C084FC] ${
+                          !canPrice ? 'opacity-60 cursor-not-allowed' : ''
+                        }`}
                       />
                     </div>
 
@@ -493,7 +534,7 @@ export default function AdminPage() {
                         className="px-5 py-2.5 bg-[#C084FC] hover:bg-purple-300 text-black font-semibold text-xs rounded-xl shadow-[0_0_15px_rgba(192,132,252,0.3)] transition-all flex items-center gap-2"
                       >
                         {savingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                        Guardar & Notificar
+                        Guardar Cambios
                       </button>
                     </div>
                   </form>

@@ -121,8 +121,8 @@ export function DeliveryUploaderModal({
               <UploadCloud className="w-4 h-4 text-[#C084FC]" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Subir Entrega a Cloudflare R2</h2>
-              <p className="text-xs text-purple-300/70">Alojamiento de archivos .jar y .zip con notificación a Discord</p>
+              <h2 className="text-lg font-bold text-white tracking-tight">Subir Entrega de Compilación</h2>
+              <p className="text-xs text-purple-300/70">Alojamiento cifrado de archivos .jar y .zip con notificación automática a Discord</p>
             </div>
           </div>
           <button
@@ -138,9 +138,9 @@ export function DeliveryUploaderModal({
             <div className="w-14 h-14 rounded-full bg-emerald-950/60 border border-emerald-500/50 flex items-center justify-center text-emerald-400 mb-4 animate-bounce">
               <Check className="w-8 h-8" />
             </div>
-            <h3 className="text-base font-bold text-white mb-1">¡Build Alojada en Cloudflare R2!</h3>
+            <h3 className="text-base font-bold text-white mb-1">¡Build Publicada con Éxito!</h3>
             <p className="text-xs text-purple-300/70">
-              El cliente ha sido notificado mediante Rich Embed en Discord y ya puede descargar su versión.
+              El cliente ha sido notificado mediante Rich Embed en Discord y ya puede descargar su versión de forma segura.
             </p>
           </div>
         ) : (
@@ -270,7 +270,7 @@ export function DeliveryUploaderModal({
                 className="px-5 py-2.5 bg-gradient-to-r from-[#9333EA] to-[#C084FC] hover:from-[#A855F7] hover:to-[#D8B4FE] text-white font-semibold text-xs rounded-xl shadow-[0_0_20px_rgba(192,132,252,0.3)] transition-all flex items-center gap-2"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                Subir a Cloudflare R2
+                Publicar Build & Notificar
               </button>
             </div>
           </form>

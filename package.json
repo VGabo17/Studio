@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "clean": "next clean"
+    "clean": "next clean",
+    "d1:init": "wrangler d1 create synthetix-db",
+    "d1:migrate": "wrangler d1 execute synthetix-db --file=./schema.sql --remote",
+    "d1:migrate:local": "wrangler d1 execute synthetix-db --file=./schema.sql --local",
+    "r2:init": "wrangler r2 bucket create synthetix-deliveries"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isStaff, canCompleteProject, canSetPrice, canUpdateProgress } from '@/lib/auth';
 import { dbService } from '@/lib/db';
 import { sendDiscordNotification } from '@/lib/discord-webhook';
 import { z } from 'zod';
@@ -10,6 +10,7 @@ const updateProjectSchema = z.object({
   price: z.number().positive().nullable().optional(),
   title: z.string().min(3).optional(),
   description: z.string().min(5).optional(),
+  assigned_to: z.string().nullable().optional(),
 });
 
 interface RouteParams {
@@ -28,8 +29,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
   }
 
-  // Verificar permisos: dueño del proyecto o administrador
-  if (user.role !== 'admin' && project.client_id !== user.id) {
+  // Verificar permisos: dueño del proyecto o miembro del staff
+  const staff = isStaff(user.role);
+  if (!staff && project.client_id !== user.id) {
     return NextResponse.json({ error: 'Acceso no autorizado a este proyecto' }, { status: 403 });
   }
 
@@ -43,9 +45,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   }
 
-  // Solo administradores pueden modificar estados, progreso y costos
-  if (user.role !== 'admin') {
-    return NextResponse.json({ error: 'Solo administradores del estudio pueden modificar este proyecto' }, { status: 403 });
+  // Verificación granular de RBAC
+  const staff = isStaff(user.role);
+  if (!staff) {
+    return NextResponse.json({ error: 'Solo miembros autorizados del staff pueden modificar proyectos' }, { status: 403 });
   }
 
   const existingProject = await dbService.getProjectById(id);
@@ -56,6 +59,30 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
     const body = await req.json();
     const validated = updateProjectSchema.parse(body);
+
+    // REGLA GRANULAR 1: Solo developer_senior y admin pueden marcar 'completed'
+    if (validated.status === 'completed' && !canCompleteProject(user.role)) {
+      return NextResponse.json(
+        { error: 'Permiso denegado: Únicamente los roles "developer_senior" y "admin" pueden marcar un proyecto como completado.' },
+        { status: 403 }
+      );
+    }
+
+    // REGLA GRANULAR 2: Solo admin puede modificar precios
+    if (validated.price !== undefined && !canSetPrice(user.role)) {
+      return NextResponse.json(
+        { error: 'Permiso denegado: Únicamente los administradores pueden fijar o modificar tarifas acordadas.' },
+        { status: 403 }
+      );
+    }
+
+    // REGLA GRANULAR 3: Restricción de progreso para developers juniors
+    if (validated.progress !== undefined && !canUpdateProgress(user.role, validated.progress)) {
+      return NextResponse.json(
+        { error: 'Permiso denegado: Tu rol como Developer Junior puede registrar avances hasta el 85% (Fase de Pruebas). La aprobación final requiere Developer Senior o Admin.' },
+        { status: 403 }
+      );
+    }
 
     const previousStatus = existingProject.status;
     const previousProgress = existingProject.progress;

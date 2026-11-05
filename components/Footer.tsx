@@ -39,7 +39,7 @@ export function Footer() {
         </div>
 
         <div className="text-xs text-purple-400/60 font-mono text-center md:text-right">
-          © {new Date().getFullYear()} Synthetix Studio · Cloudflare D1 & R2 Powered
+          © {new Date().getFullYear()} Synthetix Studio · Infraestructura Privada & Entregas Cifradas
         </div>
       </div>
 

@@ -9,7 +9,7 @@ import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { NewProjectModal } from '@/components/NewProjectModal';
 import { DiscordEmbedAuditModal } from '@/components/DiscordEmbedAuditModal';
-import { Project, ProjectStatus, User } from '@/lib/types';
+import { Project, ProjectStatus, User, UserRole } from '@/lib/types';
 import {
   Terminal,
   Server,
@@ -25,6 +25,9 @@ import {
   FileCode,
   Send,
   Loader2,
+  Shield,
+  Globe,
+  Code2,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
@@ -63,11 +66,13 @@ const STATUS_CONFIG: Record<
   },
 };
 
-const SERVICE_CONFIG = {
-  plugin_mc: { name: 'Plugin Paper/Purpur', icon: Terminal },
-  setup_mc: { name: 'Setup Servidor', icon: Server },
-  bot_discord: { name: 'Bot de Discord', icon: Bot },
-  full_pack: { name: 'Full Pack Estudio', icon: Layers },
+const SERVICE_CONFIG: Record<string, { name: string; icon: React.ElementType }> = {
+  plugin_mc: { name: 'Plugin Minecraft a Medida', icon: Terminal },
+  setup_mc: { name: 'Setup Servidor Minecraft', icon: Server },
+  setup_dc: { name: 'Setup Servidor Discord', icon: Shield },
+  web_portfolio: { name: 'Web Portafolio Personalizada', icon: Globe },
+  bot_discord: { name: 'Bot de Discord a tu Gusto', icon: Bot },
+  full_pack: { name: 'Pack Completo Network', icon: Layers },
 };
 
 export default function DashboardPage() {
@@ -143,7 +148,7 @@ export default function DashboardPage() {
     router.push('/');
   };
 
-  const handleSwitchPersona = async (role: 'client' | 'admin') => {
+  const handleSwitchPersona = async (role: UserRole) => {
     await fetch('/api/auth/quick-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -175,38 +180,74 @@ export default function DashboardPage() {
       <div className="w-full bg-[#120A21]/90 border-b border-[#261442] py-2 px-4">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-purple-400 font-mono">Modo de Vista:</span>
+            <span className="text-purple-400 font-mono">Modo de Rol:</span>
             <span className="text-white font-semibold">
-              {user ? (user.role === 'admin' ? '🛡️ Administrador del Estudio' : '👤 Cliente Autenticado') : 'Invitado'}
+              {user ? (
+                user.role === 'admin' ? '🛡️ Administrador Lead' :
+                user.role === 'developer_senior' ? '💻 Dev Senior' :
+                user.role === 'developer_junior' ? '⚡ Dev Junior' :
+                user.role === 'support' ? '🎧 Soporte Técnico' :
+                '👤 Cliente'
+              ) : 'Invitado'}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center flex-wrap gap-1.5">
             <button
               onClick={() => handleSwitchPersona('client')}
-              className={`px-2.5 py-1 rounded text-xs transition-colors ${
+              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
                 user?.role === 'client'
                   ? 'bg-[#C084FC] text-black font-semibold'
                   : 'bg-[#261442] text-purple-300 hover:text-white'
               }`}
             >
-              Vista Cliente
+              Cliente
+            </button>
+            <button
+              onClick={() => handleSwitchPersona('support')}
+              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                user?.role === 'support'
+                  ? 'bg-blue-400 text-black font-semibold'
+                  : 'bg-[#261442] text-purple-300 hover:text-white'
+              }`}
+            >
+              Soporte
+            </button>
+            <button
+              onClick={() => handleSwitchPersona('developer_junior')}
+              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                user?.role === 'developer_junior'
+                  ? 'bg-cyan-400 text-black font-semibold'
+                  : 'bg-[#261442] text-purple-300 hover:text-white'
+              }`}
+            >
+              Dev Junior
+            </button>
+            <button
+              onClick={() => handleSwitchPersona('developer_senior')}
+              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                user?.role === 'developer_senior'
+                  ? 'bg-purple-400 text-black font-semibold'
+                  : 'bg-[#261442] text-purple-300 hover:text-white'
+              }`}
+            >
+              Dev Senior
             </button>
             <button
               onClick={() => handleSwitchPersona('admin')}
-              className={`px-2.5 py-1 rounded text-xs transition-colors ${
+              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
                 user?.role === 'admin'
                   ? 'bg-amber-400 text-black font-semibold'
                   : 'bg-[#261442] text-purple-300 hover:text-white'
               }`}
             >
-              Vista Admin (Gestionar todo)
+              Admin Lead
             </button>
             <button
               onClick={() => setAuditModalOpen(true)}
-              className="px-2.5 py-1 rounded bg-[#261442] hover:bg-[#341b5a] text-purple-200 transition-colors flex items-center gap-1"
+              className="px-2 py-0.5 rounded bg-[#261442] hover:bg-[#341b5a] text-purple-200 transition-colors flex items-center gap-1 text-[11px]"
             >
               <Send className="w-3 h-3 text-[#C084FC]" />
-              Ver Webhooks Discord
+              Webhooks
             </button>
           </div>
         </div>
@@ -282,7 +323,7 @@ export default function DashboardPage() {
 
           <div className="p-5 rounded-2xl bg-[#120A21] border border-[#261442]">
             <div className="flex items-center justify-between text-purple-400 mb-2">
-              <span className="text-xs font-medium">Archivos & Builds en R2</span>
+              <span className="text-xs font-medium">Builds & Entregas Seguras</span>
               <Download className="w-4 h-4 text-[#C084FC]" />
             </div>
             <div className="text-3xl font-extrabold text-[#C084FC] font-mono tabular-nums">
@@ -354,7 +395,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="p-16 text-center text-purple-400 flex flex-col items-center">
             <Loader2 className="w-8 h-8 animate-spin text-[#C084FC] mb-3" />
-            <p className="text-xs">Cargando registros desde Cloudflare D1...</p>
+            <p className="text-xs">Cargando proyectos y órdenes activas...</p>
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="p-16 rounded-2xl bg-[#120A21] border border-[#261442] text-center max-w-lg mx-auto">

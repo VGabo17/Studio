@@ -1,20 +1,14 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import { JWTPayload, User } from './types';
+import { JWTPayload, User, UserRole } from './types';
 
-const DEFAULT_SECRET = 'synthetix_cyber_lilac_secret_key_prod_2026_d1_r2_jwt';
+const DEFAULT_SECRET = 'synthetix_cyber_lilac_secret_key_prod_2026_jwt_rbac';
 const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || DEFAULT_SECRET);
 
 export const COOKIE_NAME = 'synthetix_session';
 
-/**
- * Checks if a given Discord snowflake / user ID is listed in ADMIN_DISCORD_IDS
- */
-export function isUserAdmin(userId: string): boolean {
-  const adminIdsStr = process.env.ADMIN_DISCORD_IDS || '903391086054,123456789012345678,admin-dev-id';
-  const adminIds = adminIdsStr.split(',').map((id) => id.trim()).filter(Boolean);
-  return adminIds.includes(userId);
-}
+import { isUserAdmin } from './permissions';
+export * from './permissions';
 
 /**
  * Signs a JWT session token valid for 7 days
@@ -25,9 +19,12 @@ export async function createSessionToken(user: {
   global_name: string | null;
   avatar: string | null;
   email: string | null;
-  role: 'client' | 'admin';
+  role: UserRole;
 }): Promise<string> {
-  const role: 'client' | 'admin' = isUserAdmin(user.id) || user.role === 'admin' ? 'admin' : 'client';
+  let role: UserRole = user.role;
+  if (isUserAdmin(user.id)) {
+    role = 'admin';
+  }
 
   return new SignJWT({
     userId: user.id,
@@ -44,7 +41,7 @@ export async function createSessionToken(user: {
 }
 
 /**
- * Verifies a JWT session token and returns the payload or null
+ * Verifies a JWT session token
  */
 export async function verifySessionToken(token: string): Promise<JWTPayload | null> {
   try {
@@ -55,7 +52,7 @@ export async function verifySessionToken(token: string): Promise<JWTPayload | nu
       globalName: (payload.globalName as string) || null,
       avatar: (payload.avatar as string) || null,
       email: (payload.email as string) || null,
-      role: (payload.role as 'client' | 'admin') || 'client',
+      role: (payload.role as UserRole) || 'client',
     };
   } catch {
     return null;
@@ -63,7 +60,7 @@ export async function verifySessionToken(token: string): Promise<JWTPayload | nu
 }
 
 /**
- * Retrieves the current user from Next.js cookies
+ * Retrieves the current user from cookies
  */
 export async function getCurrentUser(): Promise<User | null> {
   const cookieStore = await cookies();

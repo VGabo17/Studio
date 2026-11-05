@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Sparkles, Mail, Shield, User, ArrowRight, Loader2 } from 'lucide-react';
+import { UserRole } from '@/lib/types';
+import { Sparkles, Mail, Shield, User, ArrowRight, Loader2, Code2, Headphones } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,15 +11,16 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
-  const [activeTab, setActiveTab] = useState<'discord' | 'email' | 'personas'>('personas');
+  const [activeTab, setActiveTab] = useState<'personas' | 'email' | 'discord'>('personas');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('client');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handlePersonaLogin = async (persona: 'admin' | 'client') => {
+  const handlePersonaLogin = async (persona: UserRole) => {
     setLoading(true);
     setError(null);
     try {
@@ -55,6 +57,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         body: JSON.stringify({
           email,
           username: username.trim() || undefined,
+          targetRole: selectedRole,
         }),
       });
       const data = await res.json();
@@ -74,18 +77,61 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     window.location.href = '/api/auth/discord/login';
   };
 
+  const personas: { role: UserRole; name: string; title: string; desc: string; icon: React.ElementType; color: string }[] = [
+    {
+      role: 'admin',
+      name: 'AlexDev',
+      title: 'Studio Founder & Admin',
+      desc: 'Control total de la plataforma, aprobación de presupuestos y gestión global.',
+      icon: Shield,
+      color: 'text-amber-400 border-amber-500/40 bg-amber-950/40',
+    },
+    {
+      role: 'developer_senior',
+      name: 'MarcusDev',
+      title: 'Senior Developer (NMS & Core)',
+      desc: 'Puede marcar proyectos como completados, subir builds .jar/.zip y liderar el desarrollo.',
+      icon: Sparkles,
+      color: 'text-[#C084FC] border-[#C084FC]/40 bg-purple-950/40',
+    },
+    {
+      role: 'developer_junior',
+      name: 'LeoDev',
+      title: 'Junior Developer',
+      desc: 'Registra avances en desarrollo (hasta 85%), participa en chat y resuelve issues.',
+      icon: Code2,
+      color: 'text-cyan-400 border-cyan-500/40 bg-cyan-950/40',
+    },
+    {
+      role: 'support',
+      name: 'Elena',
+      title: 'Soporte al Cliente & Tickets',
+      desc: 'Atención a dudas en tiempo real y asistencia técnica en los requerimientos.',
+      icon: Headphones,
+      color: 'text-emerald-400 border-emerald-500/40 bg-emerald-950/40',
+    },
+    {
+      role: 'client',
+      name: 'Phoenix Network',
+      title: 'Cliente Dueño de Servidor',
+      desc: 'Gestiona sus pedidos, chatea con el equipo y descarga ejecutables seguros.',
+      icon: User,
+      color: 'text-purple-300 border-purple-500/30 bg-[#08050E]',
+    },
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-[#120A21] border border-[#261442] rounded-2xl shadow-[0_0_40px_rgba(192,132,252,0.3)] overflow-hidden">
+      <div className="relative w-full max-w-lg bg-[#120A21] border border-[#261442] rounded-2xl shadow-[0_0_40px_rgba(192,132,252,0.3)] overflow-hidden max-h-[90vh] flex flex-col">
         {/* Modal Header */}
-        <div className="p-6 pb-4 border-b border-[#261442] flex items-center justify-between">
+        <div className="p-6 pb-4 border-b border-[#261442] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-purple-950/80 border border-[#C084FC]/50 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-[#C084FC]" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white tracking-tight">Acceso a Synthetix Studio</h2>
-              <p className="text-xs text-purple-300/70">Gestiona pedidos, entregas y descargas R2</p>
+              <p className="text-xs text-purple-300/70">Portal privado para gestión y entregas de software</p>
             </div>
           </div>
           <button
@@ -97,7 +143,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-[#261442] p-1.5 bg-[#08050E]/60 gap-1 text-xs">
+        <div className="flex border-b border-[#261442] p-1.5 bg-[#08050E]/60 gap-1 text-xs shrink-0">
           <button
             onClick={() => setActiveTab('personas')}
             className={`flex-1 py-1.5 rounded-lg font-medium transition-all ${
@@ -106,7 +152,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 : 'text-purple-300/60 hover:text-white'
             }`}
           >
-            Acceso Rápido
+            Roles Granulares
           </button>
           <button
             onClick={() => setActiveTab('email')}
@@ -131,7 +177,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         </div>
 
         {/* Modal Body */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-950/40 border border-red-800/60 text-xs text-red-200">
               {error}
@@ -139,52 +185,40 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           )}
 
           {activeTab === 'personas' && (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <p className="text-xs text-purple-300/70 mb-3">
-                Selecciona una de las cuentas de prueba con proyectos reales precargados en Cloudflare D1:
+                Selecciona una cuenta con permisos específicos para comprobar el sistema de roles granular:
               </p>
 
-              <button
-                disabled={loading}
-                onClick={() => handlePersonaLogin('client')}
-                className="w-full p-3.5 rounded-xl bg-[#08050E] border border-[#261442] hover:border-[#C084FC] hover:shadow-[0_0_20px_rgba(192,132,252,0.25)] transition-all flex items-center justify-between text-left group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-purple-900/40 border border-[#C084FC]/30 flex items-center justify-center text-[#C084FC]">
-                    <User className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-white group-hover:text-[#C084FC] transition-colors">
-                      Phoenix Network [Owner]
+              {personas.map((p) => {
+                const Icon = p.icon;
+                return (
+                  <button
+                    key={p.role}
+                    disabled={loading}
+                    onClick={() => handlePersonaLogin(p.role)}
+                    className="w-full p-3 rounded-xl bg-[#08050E] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_15px_rgba(192,132,252,0.2)] transition-all flex items-center justify-between text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${p.color}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-[#C084FC] transition-colors flex items-center gap-2">
+                          <span>{p.name}</span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#120A21] text-purple-300">
+                            {p.title}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-purple-300/60 line-clamp-1 mt-0.5">
+                          {p.desc}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-purple-300/60">
-                      Rol: Cliente · 2 Proyectos · 3 Entregas .jar
-                    </div>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-purple-400 group-hover:text-white transition-colors" />
-              </button>
-
-              <button
-                disabled={loading}
-                onClick={() => handlePersonaLogin('admin')}
-                className="w-full p-3.5 rounded-xl bg-[#08050E] border border-[#261442] hover:border-amber-400/80 hover:shadow-[0_0_20px_rgba(251,191,36,0.2)] transition-all flex items-center justify-between text-left group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-950/40 border border-amber-500/40 flex items-center justify-center text-amber-400">
-                    <Shield className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-white group-hover:text-amber-300 transition-colors">
-                      AlexDev • Synthetix Lead
-                    </div>
-                    <div className="text-xs text-purple-300/60">
-                      Rol: Administrador · Gestión total & Subidas R2
-                    </div>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-amber-400 group-hover:text-white transition-colors" />
-              </button>
+                    <ArrowRight className="w-4 h-4 text-purple-400 group-hover:text-white shrink-0 ml-2" />
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -202,7 +236,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="dueño@tu-servidor.net"
-                    className="w-full pl-9 pr-4 py-2.5 bg-[#08050E] border border-[#261442] rounded-xl text-sm text-white placeholder-purple-400/40 focus:outline-none focus:border-[#C084FC] focus:ring-1 focus:ring-[#C084FC]"
+                    className="w-full pl-9 pr-4 py-2.5 bg-[#08050E] border border-[#261442] rounded-xl text-sm text-white placeholder-purple-400/40 focus:outline-none focus:border-[#C084FC]"
                   />
                 </div>
               </div>
@@ -218,9 +252,26 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Ej. CraftMaster99"
-                    className="w-full pl-9 pr-4 py-2.5 bg-[#08050E] border border-[#261442] rounded-xl text-sm text-white placeholder-purple-400/40 focus:outline-none focus:border-[#C084FC] focus:ring-1 focus:ring-[#C084FC]"
+                    className="w-full pl-9 pr-4 py-2.5 bg-[#08050E] border border-[#261442] rounded-xl text-sm text-white placeholder-purple-400/40 focus:outline-none focus:border-[#C084FC]"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-purple-200 mb-1.5">
+                  Rol Solicitado
+                </label>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                  className="w-full px-3.5 py-2.5 bg-[#08050E] border border-[#261442] rounded-xl text-xs text-white focus:outline-none focus:border-[#C084FC]"
+                >
+                  <option value="client">👤 Cliente (Acceso a proyectos propios)</option>
+                  <option value="support">🎧 Soporte (Gestión de tickets y dudas)</option>
+                  <option value="developer_junior">🛠️ Developer Junior (Avance hasta 85%)</option>
+                  <option value="developer_senior">⚡ Developer Senior (Completar & Subir Builds)</option>
+                  <option value="admin">👑 Administrador (Acceso total)</option>
+                </select>
               </div>
 
               <button
@@ -238,7 +289,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             <div className="space-y-4 text-center">
               <div className="p-4 rounded-xl bg-[#5865F2]/10 border border-[#5865F2]/30 text-purple-200 text-xs leading-relaxed">
                 <p className="font-semibold text-white mb-1">Discord OAuth2 Oficial</p>
-                Autenticación segura solicitando permisos <code className="text-[#C084FC] font-mono">identify</code> y <code className="text-[#C084FC] font-mono">email</code> para sincronizar automáticamente tu avatar y tag con tus pedidos de Minecraft.
+                Inicia sesión de forma segura vinculando tu avatar y tag de Discord para sincronizar en tiempo real tus pedidos y tickets técnicos.
               </div>
 
               <button

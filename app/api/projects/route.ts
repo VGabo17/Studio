@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isStaff } from '@/lib/auth';
 import { dbService } from '@/lib/db';
 import { sendDiscordNotification } from '@/lib/discord-webhook';
 import { z } from 'zod';
 
 const createProjectSchema = z.object({
   title: z.string().min(3, 'El título debe tener al menos 3 caracteres').max(100),
-  service_type: z.enum(['plugin_mc', 'setup_mc', 'bot_discord', 'full_pack']),
+  service_type: z.enum([
+    'plugin_mc',
+    'setup_mc',
+    'setup_dc',
+    'web_portfolio',
+    'bot_discord',
+    'full_pack',
+  ]),
   description: z.string().min(10, 'Describe con mayor detalle los requerimientos técnicos'),
   price: z.number().positive().optional(),
 });
@@ -19,7 +26,7 @@ export async function GET() {
 
   try {
     let projects;
-    if (user.role === 'admin') {
+    if (isStaff(user.role)) {
       projects = await dbService.getAllProjects();
     } else {
       projects = await dbService.getProjectsByClientId(user.id);

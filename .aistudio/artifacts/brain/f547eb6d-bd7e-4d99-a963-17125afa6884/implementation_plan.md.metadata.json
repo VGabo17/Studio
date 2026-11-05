@@ -1,6 +1,6 @@
 {
-  "summary": "Plan de arquitectura técnica y diseño UI/UX para Synthetix Studio, incluyendo portal de clientes, sistema de entregas .jar/.zip con Cloudflare R2, base de datos D1 SQLite, autenticación dual Discord/Email, panel de administración con control de progreso en tiempo real y webhooks con embeds lila neón.",
-  "updatedAt": "2026-11-05T03:31:43.749768168Z",
+  "summary": "Guía y plan de despliegue a producción en Cloudflare Pages con bindings D1 y R2 para Synthetix Studio, incluyendo checklist técnico, migración de base de datos SQL, vinculación de variables de entorno y mapeo de Discord OAuth2.",
+  "updatedAt": "2026-11-05T03:48:47.770094230Z",
   "requestFeedback": true,
   "userFacing": true
 }

@@ -1,4 +1,13 @@
-import { Delivery, Project, ProjectComment, ProjectStatus, ServiceType, User } from './types';
+import {
+  Delivery,
+  Project,
+  ProjectComment,
+  ProjectChatMessage,
+  ProjectStatus,
+  ServiceType,
+  User,
+  UserRole,
+} from './types';
 import { isUserAdmin } from './auth';
 
 // Estado persistente en memoria para la instancia de ejecución
@@ -7,6 +16,8 @@ interface DatabaseState {
   projects: Map<string, Project>;
   deliveries: Map<string, Delivery>;
   comments: Map<string, ProjectComment>;
+  chatMessages: Map<string, ProjectChatMessage>;
+  chatSubscribers: Map<string, Set<(msg: ProjectChatMessage) => void>>;
 }
 
 declare global {
@@ -22,12 +33,14 @@ function initDb(): DatabaseState {
   const projects = new Map<string, Project>();
   const deliveries = new Map<string, Delivery>();
   const comments = new Map<string, ProjectComment>();
+  const chatMessages = new Map<string, ProjectChatMessage>();
+  const chatSubscribers = new Map<string, Set<(msg: ProjectChatMessage) => void>>();
 
-  // Usuario Admin inicial
+  // 1. USUARIOS CON ROLES GRANULARES
   const adminUser: User = {
     id: '903391086054',
     username: 'alex_synthetix',
-    global_name: 'AlexDev • Synthetix Lead',
+    global_name: 'AlexDev • Studio Founder',
     avatar: 'a_f183748291024',
     email: 'admin@synthetixstudio.dev',
     role: 'admin',
@@ -35,8 +48,40 @@ function initDb(): DatabaseState {
   };
   users.set(adminUser.id, adminUser);
 
-  // Clientes iniciales
-  const clientUser1: User = {
+  const seniorDev: User = {
+    id: 'dev-senior-marcus',
+    username: 'marcus_dev',
+    global_name: 'MarcusDev • Lead NMS & Java',
+    avatar: 'd_192837465',
+    email: 'marcus@synthetixstudio.dev',
+    role: 'developer_senior',
+    created_at: '2026-01-15T10:00:00Z',
+  };
+  users.set(seniorDev.id, seniorDev);
+
+  const juniorDev: User = {
+    id: 'dev-junior-leo',
+    username: 'leo_dev',
+    global_name: 'LeoDev • Junior Dev',
+    avatar: 'e_582910293',
+    email: 'leo@synthetixstudio.dev',
+    role: 'developer_junior',
+    created_at: '2026-02-01T08:00:00Z',
+  };
+  users.set(juniorDev.id, juniorDev);
+
+  const supportUser: User = {
+    id: 'support-elena',
+    username: 'elena_support',
+    global_name: 'Elena • Soporte & Tickets',
+    avatar: 'f_849201837',
+    email: 'soporte@synthetixstudio.dev',
+    role: 'support',
+    created_at: '2026-02-05T11:00:00Z',
+  };
+  users.set(supportUser.id, supportUser);
+
+  const clientUser: User = {
     id: 'client-phoenix-mc',
     username: 'phoenix_owner',
     global_name: 'Phoenix Network [Owner]',
@@ -45,154 +90,147 @@ function initDb(): DatabaseState {
     role: 'client',
     created_at: '2026-02-01T15:30:00Z',
   };
-  users.set(clientUser1.id, clientUser1);
+  users.set(clientUser.id, clientUser);
 
-  const clientUser2: User = {
-    id: 'client-vortex-box',
-    username: 'vortex_pvp',
-    global_name: 'VortexPvP Admin',
-    avatar: 'c_938172645102',
-    email: 'management@vortexpvp.com',
-    role: 'client',
-    created_at: '2026-02-14T09:15:00Z',
-  };
-  users.set(clientUser2.id, clientUser2);
-
-  // Proyectos iniciales
-  const prj1024: Project = {
-    id: 'PRJ-1024',
-    client_id: clientUser1.id,
-    title: 'SynthetixEconomy Core (Paper 1.21.4)',
+  // 2. TRABAJOS Y PROYECTOS REALES DE SYNTHETIX STUDIO
+  // Proyecto Real 1: isrewards (Plugin Minecraft)
+  const prjRewards: Project = {
+    id: 'PRJ-101',
+    client_id: clientUser.id,
+    assigned_to: seniorDev.id,
+    title: 'isrewards • Sistema de Recompensas Diarias & Rachas',
     service_type: 'plugin_mc',
-    description: 'Plugin de economía ultra-optimizado con soporte para SQLite/MySQL, multi-divisa (Gemas, Monedas, Cristales), transacciones atómicas NMS, GUI interactiva con paginación fluida y API de eventos para desarrolladores.',
+    description: 'Plugin personalizado para Spigot/Paper con sistema de recompensas por tiempo jugado, ruleta de premios con GUI interactiva sin lag y rachas diarias con sincronización de base de datos segura.',
     status: 'completed',
     progress: 100,
-    price: 380,
-    created_at: '2026-02-10T14:20:00Z',
-    updated_at: '2026-02-28T18:45:00Z',
+    price: 45,
+    created_at: '2026-01-20T14:00:00Z',
+    updated_at: '2026-02-02T19:00:00Z',
   };
-  projects.set(prj1024.id, prj1024);
+  projects.set(prjRewards.id, prjRewards);
 
-  const prj1048: Project = {
-    id: 'PRJ-1048',
-    client_id: clientUser1.id,
-    title: 'BoxPvP Extreme Network Setup & Anti-Crash',
+  // Proyecto Real 2: issecurity (Plugin Minecraft)
+  const prjSecurity: Project = {
+    id: 'PRJ-102',
+    client_id: clientUser.id,
+    assigned_to: seniorDev.id,
+    title: 'issecurity • Protección de Cuentas, Anti-Bot & Anti-Exploit',
+    service_type: 'plugin_mc',
+    description: 'Plugin avanzado de seguridad para servidores de Minecraft: autenticación 2FA en chat, filtrado de paquetes corruptos, limitador de conexiones simultáneas y protección de permisos contra inyecciones.',
+    status: 'completed',
+    progress: 100,
+    price: 60,
+    created_at: '2026-01-25T11:30:00Z',
+    updated_at: '2026-02-10T16:20:00Z',
+  };
+  projects.set(prjSecurity.id, prjSecurity);
+
+  // Proyecto Real 3: Nixer Network (Network vendida)
+  const prjNixer: Project = {
+    id: 'PRJ-103',
+    client_id: clientUser.id,
+    assigned_to: adminUser.id,
+    title: 'Nixer Network • Modalidad Completa & Optimización TPS',
     service_type: 'setup_mc',
-    description: 'Configuración llave en mano de modalidad BoxPvP para 200+ usuarios concurrentes a 20.0 TPS estables. Incluye 18 minas personalizadas, escalado de armaduras netherite custom, sistema de hologramas sin entidades pesadas y filtros anti-exploit de paquetes de red.',
-    status: 'in_development',
-    progress: 75,
-    price: 540,
-    created_at: '2026-02-20T11:00:00Z',
-    updated_at: '2026-03-01T10:30:00Z',
+    description: 'Network completa desarrollada, optimizada y vendida exitosamente: configuración de proxy Bungee/Velocity, modalidades Survival Custom y BoxPvP con economías balanceadas y 20.0 TPS estables.',
+    status: 'completed',
+    progress: 100,
+    price: 180,
+    created_at: '2026-02-01T09:00:00Z',
+    updated_at: '2026-02-25T18:00:00Z',
   };
-  projects.set(prj1048.id, prj1048);
+  projects.set(prjNixer.id, prjNixer);
 
-  const prj1082: Project = {
-    id: 'PRJ-1082',
-    client_id: clientUser2.id,
-    title: 'GuildLink & Discord Sync Bot (Discord.js v14)',
+  // Proyecto Activo 4: Bot de Discord a medida
+  const prjBot: Project = {
+    id: 'PRJ-104',
+    client_id: clientUser.id,
+    assigned_to: juniorDev.id,
+    title: 'Bot de Discord a tu Gusto (Tickets & Sincronización MC)',
     service_type: 'bot_discord',
-    description: 'Bot customizado de Discord sincronizado vía sockets con servidor Paper. Sistema de tickets con embeds dinámicos, vinculación de cuenta `/link` con verificación de UUID de Mojang, roles automáticos según rangos donadores y log de sanciones en canales privados.',
-    status: 'testing',
-    progress: 90,
-    price: 240,
-    created_at: '2026-02-25T16:00:00Z',
-    updated_at: '2026-03-03T19:10:00Z',
+    description: 'Bot personalizado en Discord.js v14 con transcripciones automáticas de tickets, comandos slash interactivos y sincronización de rangos de Minecraft.',
+    status: 'in_development',
+    progress: 65,
+    price: 35,
+    created_at: '2026-03-01T10:00:00Z',
+    updated_at: '2026-03-04T12:00:00Z',
   };
-  projects.set(prj1082.id, prj1082);
+  projects.set(prjBot.id, prjBot);
 
-  const prj1105: Project = {
-    id: 'PRJ-1105',
-    client_id: clientUser2.id,
-    title: 'Full Pack: Survival Custom RPG 1.21 & Bot Integral',
-    service_type: 'full_pack',
-    description: 'Desarrollo integral de servidor Survival con misiones guiadas, generadores de items legendarios con NBT tags y Bot de estadísticas en tiempo real conectado a base de datos D1.',
-    status: 'pending',
-    progress: 10,
-    price: 780,
-    created_at: '2026-03-02T08:00:00Z',
-    updated_at: '2026-03-02T08:00:00Z',
+  // 3. ENTREGAS REALES
+  const delRewards: Delivery = {
+    id: 'del-isrewards-v142',
+    project_id: prjRewards.id,
+    version: 'v1.4.2-RELEASE',
+    file_key: 'deliveries/isrewards-v1.4.2.jar',
+    file_name: 'isrewards-v1.4.2.jar',
+    file_size: 894020,
+    changelog: '• Sistema de recompensas diarias por racha.\n• Soporte para PlaceholderAPI (%isrewards_streak%).\n• Guardado atómico asíncrono.',
+    created_at: '2026-02-02T19:00:00Z',
   };
-  projects.set(prj1105.id, prj1105);
+  deliveries.set(delRewards.id, delRewards);
 
-  // Entregas iniciales (Cloudflare R2)
-  const del1: Delivery = {
-    id: 'del-uuid-1024-v120',
-    project_id: prj1024.id,
-    version: 'v1.2.0-RELEASE',
-    file_key: 'projects/PRJ-1024/SynthetixEconomy-1.2.0-RELEASE.jar',
-    file_name: 'SynthetixEconomy-1.2.0-RELEASE.jar',
-    file_size: 1428576, // ~1.43 MB
-    changelog: '• Compilado final para Paper 1.21.4 (Java 21).\n• Corregido el memory-leak en la sincronización de transacciones asíncronas.\n• Agregado comando /eco purge para limpiar cuentas inactivas tras 90 días.',
-    created_at: '2026-02-28T18:45:00Z',
+  const delSecurity: Delivery = {
+    id: 'del-issecurity-v210',
+    project_id: prjSecurity.id,
+    version: 'v2.1.0-RELEASE',
+    file_key: 'deliveries/issecurity-v2.1.0.jar',
+    file_name: 'issecurity-v2.1.0.jar',
+    file_size: 1240180,
+    changelog: '• Bloqueo de paquetes maliciosos nbt.\n• Pin de seguridad para operadores y staff.\n• 0 lag en el hilo principal de Paper.',
+    created_at: '2026-02-10T16:20:00Z',
   };
-  deliveries.set(del1.id, del1);
+  deliveries.set(delSecurity.id, delSecurity);
 
-  const del2: Delivery = {
-    id: 'del-uuid-1024-v110',
-    project_id: prj1024.id,
-    version: 'v1.1.0-RC2',
-    file_key: 'projects/PRJ-1024/SynthetixEconomy-1.1.0-RC2.jar',
-    file_name: 'SynthetixEconomy-1.1.0-RC2.jar',
-    file_size: 1389020,
-    changelog: '• Release Candidate 2: pruebas de carga con 150 jugadores artificiales.\n• Soporte para Placeholders de PlaceholderAPI (%synthetixeco_balance_formatted%).',
-    created_at: '2026-02-22T14:10:00Z',
+  const delNixer: Delivery = {
+    id: 'del-nixer-network',
+    project_id: prjNixer.id,
+    version: 'v1.0.0-RELEASE',
+    file_key: 'deliveries/Nixer-Network-Release.zip',
+    file_name: 'Nixer-Network-Release.zip',
+    file_size: 45290110,
+    changelog: '• Paquete de archivos y configuraciones de Nixer Network.\n• Chunks pregenerados y optimización para 20.0 TPS.',
+    created_at: '2026-02-25T18:00:00Z',
   };
-  deliveries.set(del2.id, del2);
+  deliveries.set(delNixer.id, delNixer);
 
-  const del3: Delivery = {
-    id: 'del-uuid-1048-v065',
-    project_id: prj1048.id,
-    version: 'v0.6.5-BETA',
-    file_key: 'projects/PRJ-1048/BoxPvP-Network-Configurations-v2.1.zip',
-    file_name: 'BoxPvP-Setup-v0.6.5.zip',
-    file_size: 48920110, // ~48.9 MB
-    changelog: '• Incluye el paquete completo de mapas de minas pre-generados.\n• Configuración optimizada de purpur.yml y paper-world-defaults.yml para 20 TPS.\n• Requiere ProtocolLib v5.2+ en el directorio plugins/.',
-    created_at: '2026-03-01T10:30:00Z',
+  // 4. CHAT EN TIEMPO REAL INICIAL
+  const msg1: ProjectChatMessage = {
+    id: 'chat-msg-1',
+    project_id: prjBot.id,
+    user_id: clientUser.id,
+    message: 'Hola equipo, ¿sería posible que el bot cree los tickets directamente en un canal privado por cada usuario?',
+    created_at: '2026-03-02T14:10:00Z',
   };
-  deliveries.set(del3.id, del3);
+  chatMessages.set(msg1.id, msg1);
 
-  const del4: Delivery = {
-    id: 'del-uuid-1082-v100',
-    project_id: prj1082.id,
-    version: 'v1.0.0-RC1',
-    file_key: 'projects/PRJ-1082/GuildLinkBot-v1.0.jar',
-    file_name: 'GuildLinkBot-v1.0.jar',
-    file_size: 8388608, // 8 MB
-    changelog: '• Build ejecutable con dependencias sombreadas (shadowJar).\n• Incluye el archivo config.yml con los intents de Discord pre-configurados.',
-    created_at: '2026-03-03T19:10:00Z',
+  const msg2: ProjectChatMessage = {
+    id: 'chat-msg-2',
+    project_id: prjBot.id,
+    user_id: juniorDev.id,
+    message: '¡Hola! Sí, ya implementé esa lógica con Discord.js v14 creando canales de texto dinámicos con permisos exclusivos para el creador y el staff.',
+    created_at: '2026-03-02T14:15:00Z',
   };
-  deliveries.set(del4.id, del4);
+  chatMessages.set(msg2.id, msg2);
 
-  // Comentarios iniciales
-  const com1: ProjectComment = {
-    id: 'com-uuid-1',
-    project_id: prj1024.id,
-    user_id: clientUser1.id,
-    message: 'Hola Alex, probamos la build en el test server y el balance formateado con comas (ej. $1,500,000) funciona de maravilla. ¡Excelente trabajo!',
-    created_at: '2026-02-27T10:00:00Z',
+  const msg3: ProjectChatMessage = {
+    id: 'chat-msg-3',
+    project_id: prjBot.id,
+    user_id: seniorDev.id,
+    message: 'Supervisé el código y el manejo de rate-limits de Discord está óptimo. Estamos afinando las transcripciones automáticas.',
+    created_at: '2026-03-03T10:00:00Z',
   };
-  comments.set(com1.id, com1);
+  chatMessages.set(msg3.id, msg3);
 
-  const com2: ProjectComment = {
-    id: 'com-uuid-2',
-    project_id: prj1024.id,
-    user_id: adminUser.id,
-    message: '¡Genial! Acabo de subir la v1.2.0-RELEASE final a la plataforma. Ya pueden descargarla e instalarla en producción con Java 21.',
-    created_at: '2026-02-28T18:50:00Z',
+  const state: DatabaseState = {
+    users,
+    projects,
+    deliveries,
+    comments,
+    chatMessages,
+    chatSubscribers,
   };
-  comments.set(com2.id, com2);
 
-  const com3: ProjectComment = {
-    id: 'com-uuid-3',
-    project_id: prj1048.id,
-    user_id: adminUser.id,
-    message: 'Progreso actualizado al 75%. Las 18 minas ya tienen los cooldowns de regeneración ajustados para evitar caídas de frames en el cliente.',
-    created_at: '2026-03-01T11:00:00Z',
-  };
-  comments.set(com3.id, com3);
-
-  const state: DatabaseState = { users, projects, deliveries, comments };
   global.__synthetix_db = state;
   return state;
 }
@@ -211,13 +249,13 @@ export const dbService = {
     global_name?: string | null;
     avatar?: string | null;
     email?: string | null;
-    role?: 'client' | 'admin';
+    role?: UserRole;
   }): Promise<User> {
     const existing = db.users.get(userData.id);
-    const role: 'client' | 'admin' =
-      isUserAdmin(userData.id) || userData.role === 'admin' || existing?.role === 'admin'
-        ? 'admin'
-        : 'client';
+    let role: UserRole = userData.role || existing?.role || 'client';
+    if (isUserAdmin(userData.id)) {
+      role = 'admin';
+    }
 
     const user: User = {
       id: userData.id,
@@ -236,12 +274,16 @@ export const dbService = {
   // PROYECTOS
   async getAllProjects(): Promise<Project[]> {
     const list = Array.from(db.projects.values());
-    return list.map((p) => this.attachProjectRelations(p)).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    return list
+      .map((p) => this.attachProjectRelations(p))
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   },
 
   async getProjectsByClientId(clientId: string): Promise<Project[]> {
     const list = Array.from(db.projects.values()).filter((p) => p.client_id === clientId);
-    return list.map((p) => this.attachProjectRelations(p)).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    return list
+      .map((p) => this.attachProjectRelations(p))
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   },
 
   async getProjectById(id: string): Promise<Project | null> {
@@ -274,6 +316,24 @@ export const dbService = {
         };
       });
 
+    const chat_messages = Array.from(db.chatMessages.values())
+      .filter((m) => m.project_id === project.id)
+      .sort((a, b) => (a.created_at > b.created_at ? 1 : -1))
+      .map((m) => {
+        const author = db.users.get(m.user_id);
+        return {
+          ...m,
+          author: author
+            ? {
+                username: author.username,
+                global_name: author.global_name,
+                avatar: author.avatar,
+                role: author.role,
+              }
+            : undefined,
+        };
+      });
+
     return {
       ...project,
       client: client
@@ -285,6 +345,7 @@ export const dbService = {
         : undefined,
       deliveries,
       comments,
+      chat_messages,
     };
   },
 
@@ -295,8 +356,7 @@ export const dbService = {
     description: string;
     price?: number;
   }): Promise<Project> {
-    // Generar ID tipo 'PRJ-XXXX' (4 dígitos numéricos)
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const randomNum = Math.floor(100 + Math.random() * 900);
     const id = `PRJ-${randomNum}`;
 
     const newProject: Project = {
@@ -318,7 +378,7 @@ export const dbService = {
 
   async updateProject(
     id: string,
-    updates: Partial<Pick<Project, 'status' | 'progress' | 'price' | 'title' | 'description'>>
+    updates: Partial<Pick<Project, 'status' | 'progress' | 'price' | 'title' | 'description' | 'assigned_to'>>
   ): Promise<Project | null> {
     const existing = db.projects.get(id);
     if (!existing) return null;
@@ -333,7 +393,7 @@ export const dbService = {
     return this.attachProjectRelations(updated);
   },
 
-  // ENTREGAS (BUILDS R2)
+  // ENTREGAS
   async createDelivery(data: {
     project_id: string;
     version: string;
@@ -362,7 +422,77 @@ export const dbService = {
     return db.deliveries.get(id) || null;
   },
 
-  // COMENTARIOS / FEEDBACK
+  // CHAT EN TIEMPO REAL & COMENTARIOS
+  async addChatMessage(projectId: string, userId: string, message: string): Promise<ProjectChatMessage> {
+    const id = `chat-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const chatMsg: ProjectChatMessage = {
+      id,
+      project_id: projectId,
+      user_id: userId,
+      message,
+      created_at: new Date().toISOString(),
+    };
+
+    db.chatMessages.set(id, chatMsg);
+    const author = db.users.get(userId);
+    const enrichedMsg: ProjectChatMessage = {
+      ...chatMsg,
+      author: author
+        ? {
+            username: author.username,
+            global_name: author.global_name,
+            avatar: author.avatar,
+            role: author.role,
+          }
+        : undefined,
+    };
+
+    // Notificar suscriptores SSE / WebSocket en tiempo real
+    const subscribers = db.chatSubscribers.get(projectId);
+    if (subscribers) {
+      subscribers.forEach((cb) => {
+        try {
+          cb(enrichedMsg);
+        } catch {
+          // Ignorar suscriptor desconectado
+        }
+      });
+    }
+
+    return enrichedMsg;
+  },
+
+  async getChatMessagesByProjectId(projectId: string): Promise<ProjectChatMessage[]> {
+    return Array.from(db.chatMessages.values())
+      .filter((m) => m.project_id === projectId)
+      .sort((a, b) => (a.created_at > b.created_at ? 1 : -1))
+      .map((m) => {
+        const author = db.users.get(m.user_id);
+        return {
+          ...m,
+          author: author
+            ? {
+                username: author.username,
+                global_name: author.global_name,
+                avatar: author.avatar,
+                role: author.role,
+              }
+            : undefined,
+        };
+      });
+  },
+
+  subscribeToChat(projectId: string, callback: (msg: ProjectChatMessage) => void): () => void {
+    if (!db.chatSubscribers.has(projectId)) {
+      db.chatSubscribers.set(projectId, new Set());
+    }
+    const set = db.chatSubscribers.get(projectId)!;
+    set.add(callback);
+    return () => {
+      set.delete(callback);
+    };
+  },
+
   async addComment(projectId: string, userId: string, message: string): Promise<ProjectComment> {
     const id = `com-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
     const comment: ProjectComment = {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, canUploadDeliveries } from '@/lib/auth';
 import { dbService } from '@/lib/db';
 import { uploadToR2 } from '@/lib/storage';
 import { sendDiscordNotification } from '@/lib/discord-webhook';
@@ -16,8 +16,10 @@ const uploadDeliveryJsonSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
-  if (!user || user.role !== 'admin') {
-    return NextResponse.json({ error: 'Acceso no autorizado. Se requieren permisos de Administrador' }, { status: 403 });
+  if (!user || !canUploadDeliveries(user.role)) {
+    return NextResponse.json({
+      error: 'Permiso denegado: Únicamente los roles "developer_senior" y "admin" pueden subir compilaciones y entregas.',
+    }, { status: 403 });
   }
 
   const contentType = req.headers.get('content-type') || '';
@@ -102,12 +104,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Entrega subida a Cloudflare R2 con éxito y notificada a Discord',
+      message: 'Entrega compilada con éxito y notificada a Discord',
       delivery,
     }, { status: 201 });
   } catch (err: unknown) {
     console.error('Error uploading delivery:', err);
-    const errorMsg = err instanceof Error ? err.message : 'Error en la subida a Cloudflare R2';
+    const errorMsg = err instanceof Error ? err.message : 'Error al procesar la entrega';
     return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
   }
 }

@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -8,7 +7,7 @@ import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { NewProjectModal } from '@/components/NewProjectModal';
 import { DiscordEmbedAuditModal } from '@/components/DiscordEmbedAuditModal';
-import { User } from '@/lib/types';
+import { User, UserRole } from '@/lib/types';
 import {
   Terminal,
   Server,
@@ -18,14 +17,15 @@ import {
   ShieldCheck,
   Zap,
   Layers,
-  Database,
-  Cpu,
   Send,
   Download,
   Code2,
   CheckCircle2,
   Star,
-  ExternalLink,
+  Globe,
+  Shield,
+  Clock,
+  Lock,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -33,7 +33,7 @@ export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
   const [auditModalOpen, setAuditModalOpen] = useState(false);
-  const [portfolioFilter, setPortfolioFilter] = useState<'all' | 'plugin' | 'setup' | 'bot'>('all');
+  const [portfolioFilter, setPortfolioFilter] = useState<'all' | 'plugin' | 'setup'>('all');
 
   const fetchSession = async () => {
     try {
@@ -77,79 +77,53 @@ export default function HomePage() {
     setUser(null);
   };
 
-  const handleSwitchPersona = async (role: 'client' | 'admin') => {
+  const handleSwitchPersona = async (role: UserRole) => {
     await fetch('/api/auth/quick-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ persona: role }),
     });
-    await fetchSession();
+    fetchSession();
   };
 
-  const portfolioItems = [
+  // TRABAJOS REALES Y VERIFICADOS DE SYNTHETIX STUDIO
+  const realWorks = [
     {
-      id: 'port-1',
+      id: 'work-isrewards',
       category: 'plugin',
-      title: 'SynthetixEconomy NMS Suite',
-      badge: 'Paper 1.21.4',
-      desc: 'Sistema bancario con paginación fluida en GUIs, transacciones atómicas multihilo y sincronización en Cloudflare D1.',
-      stats: '0.00ms Tick Impact · 250k transacciones/día',
-      features: ['Soporte SQLite/MySQL', 'Multi-divisa (Gemas, Monedas)', 'NMS Packet Inventory'],
-      file: 'SynthetixEconomy-1.2.0-RELEASE.jar',
+      title: 'isrewards',
+      badge: 'Plugin Minecraft • Paper/Purpur',
+      desc: 'Plugin especializado de recompensas diarias por actividad y rachas continuas. Desarrollado con GUIs interactivas fluidas, animaciones sin caída de TPS y soporte para PlaceholderAPI.',
+      stats: '100% Funcional · 0 lag en tick-rate',
+      features: ['Recompensas diarias y por racha', 'GUIs interactivas sin parpadeos', 'PlaceholderAPI %isrewards_streak%'],
+      file: 'isrewards-v1.4.2.jar',
+      statusTag: 'Desarrollado & Activo',
     },
     {
-      id: 'port-2',
-      category: 'setup',
-      title: 'BoxPvP Extreme Network Setup',
-      badge: 'Purpur 1.21',
-      desc: 'Modalidad configurada llave en mano con 18 minas automáticas, armaduras custom NBT y optimización de chunks sin lag spikes.',
-      stats: '20.0 TPS a 220 Jugadores · Chunks Async',
-      features: ['Anti-Crash Packets', 'Hologramas sin entidades', 'Reset programado de minas'],
-      file: 'BoxPvP-Setup-v2.1.zip',
-    },
-    {
-      id: 'port-3',
-      category: 'bot',
-      title: 'GuildLink Discord & Minecraft Bridge',
-      badge: 'Discord.js v14',
-      desc: 'Bot con sistema de tickets en hilos privados, comando /link para verificar cuentas y sincronización de roles en tiempo real.',
-      stats: '99.98% Uptime · Webhook Dispatcher',
-      features: ['Embeds Lila Automatizados', 'Verificación UUID Mojang', 'Logs de sanciones en vivo'],
-      file: 'GuildLinkBot-v1.0.jar',
-    },
-    {
-      id: 'port-4',
+      id: 'work-issecurity',
       category: 'plugin',
-      title: 'DungeonMaster RPG & Mythic Bosses',
-      badge: 'Java 21 / Spigot',
-      desc: 'Mazmorras instanciadas con inteligencia artificial personalizada para bosses y generadores de loot procedural.',
-      stats: '60 FPS en animaciones GUI · 12 Instancias',
-      features: ['IA de combate avanzada', 'Items con habilidades NBT', 'Recompensas escaladas'],
-      file: 'DungeonMaster-v1.1.jar',
+      title: 'issecurity',
+      badge: 'Plugin de Seguridad • Anti-Exploit',
+      desc: 'Sistema de protección integral para servidores de Minecraft: autenticación reforzada, filtrado de paquetes maliciosos NBT, limitador de conexiones contra ataques bot y protección de permisos.',
+      stats: 'Protección NMS · Bloqueo de Exploits',
+      features: ['Protección contra paquetes corruptos', 'Autenticación 2FA para operadores', 'Prevención de inyecciones de permisos'],
+      file: 'issecurity-v2.1.0.jar',
+      statusTag: 'Desarrollado & Activo',
     },
     {
-      id: 'port-5',
+      id: 'work-nixer',
       category: 'setup',
-      title: 'Custom Survival RPG & Misiones',
-      badge: 'Paper 1.21.4',
-      desc: 'Survival moderno con economía balanceada, protecciones sin lag de pistones y más de 120 misiones interactivas.',
-      stats: '150+ Jugadores concurrentes · 0 Exploits',
-      features: ['Terrenos anti-griefing', 'Misiones con lore custom', 'Mercado de subastas seguro'],
-      file: 'SurvivalRPG-Setup.zip',
-    },
-    {
-      id: 'port-6',
-      category: 'bot',
-      title: 'Synthetix Ticket & Verification Bot',
-      badge: 'TypeScript / Workers',
-      desc: 'Bot serverless de soporte para Discord con paneles de botones interactivos, transcripción en HTML y anti-spam.',
-      stats: '< 15ms Latencia en comandos · Cloudflare R2',
-      features: ['Transcripciones guardadas', 'Autocierre por inactividad', 'Categorización por departamento'],
-      file: 'TicketBot-Build.zip',
+      title: 'Nixer Network',
+      badge: 'Network Completa • Vendida',
+      desc: 'Red completa de Minecraft desarrollada, configurada y optimizada llave en mano: arquitectura Bungee/Velocity, modalidades BoxPvP y Survival Custom con economías balanceadas y 20.0 TPS estables.',
+      stats: 'Modalidad Vendida con Éxito',
+      features: ['Configuración Bungee/Velocity', 'Modalidad Survival & BoxPvP', '20.0 TPS a alta concurrencia'],
+      file: 'Nixer-Network-Release.zip',
+      statusTag: 'Creada & Vendida',
     },
   ];
 
-  const filteredPortfolio = portfolioItems.filter(
+  const filteredWorks = realWorks.filter(
     (item) => portfolioFilter === 'all' || item.category === portfolioFilter
   );
 
@@ -162,76 +136,34 @@ export default function HomePage() {
         onSwitchPersona={handleSwitchPersona}
       />
 
-      {/* Floating Demo Persona Pill Banner */}
-      <div className="w-full bg-[#120A21]/90 border-b border-[#261442] py-2 px-4">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#C084FC] animate-ping" />
-            <span className="text-purple-300">
-              {user ? (
-                <>Sesión activa: <strong className="text-white">{user.global_name || user.username}</strong> ({user.role === 'admin' ? 'Administrador' : 'Cliente'})</>
-              ) : (
-                'Modo Invitado: Accede con Discord o explora con cuentas de prueba'
-              )}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setAuditModalOpen(true)}
-              className="px-2.5 py-1 rounded bg-[#261442] hover:bg-[#3b1d68] text-purple-200 transition-colors flex items-center gap-1.5"
-            >
-              <Send className="w-3 h-3 text-[#C084FC]" />
-              Ver Webhooks Discord (#C084FC)
-            </button>
-            {user ? (
-              <Link
-                href="/dashboard"
-                className="px-2.5 py-1 rounded bg-[#C084FC] text-black font-semibold hover:bg-purple-300 transition-colors"
-              >
-                Ir a mi Dashboard
-              </Link>
-            ) : (
-              <button
-                onClick={() => setAuthModalOpen(true)}
-                className="px-2.5 py-1 rounded bg-[#C084FC] text-black font-semibold hover:bg-purple-300 transition-colors"
-              >
-                Probar Cuentas Demo
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative pt-20 pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-          {/* Subtle Ambient Radial Glow */}
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-gradient-to-tr from-[#9333EA]/15 via-[#C084FC]/10 to-transparent blur-[120px] pointer-events-none -z-10" />
+        <section className="relative pt-20 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[380px] bg-gradient-to-tr from-[#9333EA]/15 via-[#C084FC]/10 to-transparent blur-[120px] pointer-events-none -z-10" />
 
           <div className="max-w-5xl mx-auto text-center">
             {/* Animated Kicker Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#120A21] border border-[#C084FC]/40 text-[#C084FC] text-xs font-semibold mb-6 shadow-[0_0_15px_rgba(192,132,252,0.25)] animate-in fade-in zoom-in-95 duration-300">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#120A21] border border-[#C084FC]/40 text-[#C084FC] text-xs font-semibold mb-6 shadow-[0_0_15px_rgba(192,132,252,0.25)]">
               <Zap className="w-3.5 h-3.5 text-[#C084FC]" />
-              <span>Desarrollo de Alto Nivel para Minecraft & Discord</span>
+              <span>Desarrollo Gamer de Confianza • Minecraft & Discord</span>
             </div>
 
             {/* Impact Headline */}
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-[1.1] mb-6 font-sans">
-              Plugins NMS, Servidores sin Lag <br className="hidden sm:inline" />
-              y Bots Autónomos en{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C084FC] via-[#D8B4FE] to-[#A855F7] glow-lilac-sm">
-                Cyber Lilac
+              Plugins a Medida, Setups de Servidores <br className="hidden sm:inline" />
+              y Bots de Discord en{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C084FC] via-[#D8B4FE] to-[#A855F7]">
+                Synthetix Studio
               </span>
             </h1>
 
             {/* Subheading */}
             <p className="max-w-3xl mx-auto text-base sm:text-lg text-purple-200/80 leading-relaxed mb-10">
-              Creamos soluciones de software de grado profesional para networks de Minecraft y comunidades gaming.
-              Gestiona tus pedidos en un portal transparente, supervisa el progreso en tiempo real y descarga tus builds compiladas (.jar / .zip) alojadas en Cloudflare R2.
+              Creamos soluciones de desarrollo gamer reales: desde plugins como <strong className="text-white">isrewards</strong> e <strong className="text-white">issecurity</strong>, hasta setups optimizados como <strong className="text-white">Nixer Network</strong>, bots de Discord a tu gusto y portafolios web personalizados.
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
               <button
                 onClick={() => {
                   if (user) {
@@ -243,228 +175,231 @@ export default function HomePage() {
                 className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-[#9333EA] via-[#A855F7] to-[#C084FC] hover:from-[#A855F7] hover:to-[#D8B4FE] text-white font-bold text-sm rounded-xl shadow-[0_0_25px_rgba(192,132,252,0.35)] transition-all flex items-center justify-center gap-2.5 active:scale-98"
               >
                 <Sparkles className="w-4 h-4" />
-                {user ? 'Solicitar Nuevo Proyecto' : 'Iniciar Sesión / Solicitar Proyecto'}
+                {user ? 'Solicitar Proyecto' : 'Iniciar Sesión / Solicitar Proyecto'}
               </button>
 
               <a
-                href="#portafolio"
+                href="#tarifas"
                 className="w-full sm:w-auto px-7 py-3.5 bg-[#120A21] hover:bg-[#1c1033] border border-[#261442] hover:border-[#C084FC]/50 text-purple-200 hover:text-white font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
               >
-                Ver Portafolio de Builds
+                Consultar Tarifas & Precios
                 <ArrowRight className="w-4 h-4 text-purple-400" />
               </a>
             </div>
 
-            {/* Quantified Rigor Metrics Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-2xl bg-[#120A21]/70 border border-[#261442] backdrop-blur-sm max-w-4xl mx-auto text-center">
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono tabular-nums">
-                  +50
-                </div>
-                <div className="text-xs text-purple-300/70 mt-1">Servidores Optimizados</div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-[#C084FC] font-mono tabular-nums">
-                  +100
-                </div>
-                <div className="text-xs text-purple-300/70 mt-1">Plugins en Java/Kotlin</div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono tabular-nums">
-                  20.0
-                </div>
-                <div className="text-xs text-purple-300/70 mt-1">TPS Estables Garantizados</div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono tabular-nums">
-                  99.9%
-                </div>
-                <div className="text-xs text-purple-300/70 mt-1">Uptime de Bots & R2</div>
-              </div>
+            {/* Real Track Record Banner */}
+            <div className="p-4 rounded-2xl bg-[#120A21] border border-[#261442] max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-6 text-xs text-purple-300">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#C084FC]" />
+                Plugin <strong className="text-white">isrewards</strong> Verificado
+              </span>
+              <span className="hidden sm:inline text-purple-500">·</span>
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#C084FC]" />
+                Plugin <strong className="text-white">issecurity</strong> Activo
+              </span>
+              <span className="hidden sm:inline text-purple-500">·</span>
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <strong className="text-white">Nixer Network</strong> Desarrollada & Vendida
+              </span>
             </div>
           </div>
         </section>
 
-        {/* 3 CORE SERVICES */}
-        <section id="servicios" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-[#261442]/60">
+        {/* 5 REAL SERVICES OFFERED */}
+        <section id="servicios" className="py-18 px-4 sm:px-6 lg:px-8 border-t border-[#261442]/60">
           <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-2xl mx-auto mb-14">
               <span className="text-xs font-bold text-[#C084FC] tracking-wider uppercase font-mono">
-                Especialización Técnica
+                Lo Que Hacemos
               </span>
               <h2 className="text-3xl font-bold text-white mt-2 mb-3">
-                Servicios de Ingeniería para Comunidades Gamer
+                Servicios de Desarrollo & Configuración
               </h2>
               <p className="text-sm text-purple-300/70">
-                Soluciones a medida programadas desde cero, sin duplicados ni software genérico con fugas de memoria.
+                Especializados en Minecraft, Discord y presencia web para comunidades gamer y creadores.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Service 1 */}
-              <div className="p-7 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.25)] transition-all group flex flex-col justify-between">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Servicio 1 */}
+              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-5 group-hover:scale-105 transition-transform">
-                    <Terminal className="w-6 h-6" />
+                  <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
+                    <Server className="w-5 h-5" />
                   </div>
-                  <div className="text-xs font-mono text-purple-400 mb-1">01. Plugins Paper / Purpur</div>
-                  <h3 className="text-xl font-bold text-white mb-3">Desarrollo de Plugins a Medida</h3>
-                  <p className="text-xs text-purple-200/70 leading-relaxed mb-6">
-                    Programación en Java 21 y Kotlin para Spigot, Paper y Purpur. Dominio de NMS (net.minecraft.server), manejo de paquetes, GUIs interactivas, bases de datos asíncronas SQLite/MySQL y prevención de dupes.
+                  <h3 className="text-lg font-bold text-white mb-2">Configuración de Servidores Minecraft</h3>
+                  <p className="text-xs text-purple-200/70 leading-relaxed mb-4">
+                    Setups completos para modalidades Survival, BoxPvP, Skyblock y más. Optimización de archivos spigot.yml, paper.yml y purpur.yml para garantizar 20.0 TPS sin lag ni crasheos.
                   </p>
                 </div>
-                <div className="space-y-2 border-t border-[#261442] pt-4 text-xs text-purple-300">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
-                    <span>0.00ms de impacto en el hilo principal</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
-                    <span>Integración con Vault y PlaceholderAPI</span>
-                  </div>
+                <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
+                  Tarifa: Desde $35 USD
                 </div>
               </div>
 
-              {/* Service 2 */}
-              <div className="p-7 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.25)] transition-all group flex flex-col justify-between">
+              {/* Servicio 2 */}
+              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-5 group-hover:scale-105 transition-transform">
-                    <Server className="w-6 h-6" />
+                  <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
+                    <Shield className="w-5 h-5" />
                   </div>
-                  <div className="text-xs font-mono text-purple-400 mb-1">02. Modalidades & Optimización</div>
-                  <h3 className="text-xl font-bold text-white mb-3">Setups Completos de Servidores</h3>
-                  <p className="text-xs text-purple-200/70 leading-relaxed mb-6">
-                    Configuraciones completas listas para producción: BoxPvP, Survival Custom RPG, Skyblock y Prisión OP. Ajuste fino de flags de Java Aikar, tick-rates de entidades y balance de economías masivas.
+                  <h3 className="text-lg font-bold text-white mb-2">Configuración de Servidores Discord</h3>
+                  <p className="text-xs text-purple-200/70 leading-relaxed mb-4">
+                    Estructura profesional de canales y categorías, jerarquía de roles con permisos blindados contra raids, sistemas de bienvenida y auto-moderación configurada.
                   </p>
                 </div>
-                <div className="space-y-2 border-t border-[#261442] pt-4 text-xs text-purple-300">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
-                    <span>20.0 TPS a más de 200 jugadores</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
-                    <span>Paquetes de mapas y minas optimizados</span>
-                  </div>
+                <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
+                  Tarifa: Desde $15 USD
                 </div>
               </div>
 
-              {/* Service 3 */}
-              <div className="p-7 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.25)] transition-all group flex flex-col justify-between">
+              {/* Servicio 3 */}
+              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-5 group-hover:scale-105 transition-transform">
-                    <Bot className="w-6 h-6" />
+                  <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
+                    <Globe className="w-5 h-5" />
                   </div>
-                  <div className="text-xs font-mono text-purple-400 mb-1">03. Discord.js & Cloudflare Workers</div>
-                  <h3 className="text-xl font-bold text-white mb-3">Bots de Discord Personalizados</h3>
-                  <p className="text-xs text-purple-200/70 leading-relaxed mb-6">
-                    Bots de última generación con slash commands, botones interactivos, sistemas de tickets con transcripciones HTML automáticas, verificación de rangos y sincronización bidireccional con tu servidor de Minecraft.
+                  <h3 className="text-lg font-bold text-white mb-2">Creación de Web Portafolio</h3>
+                  <p className="text-xs text-purple-200/70 leading-relaxed mb-4">
+                    Páginas web modernas, rápidas y responsive para dueños de servidores, comunidades gamer y desarrolladores. Conecta tus redes, tienda y descargas con estilo premium.
                   </p>
                 </div>
-                <div className="space-y-2 border-t border-[#261442] pt-4 text-xs text-purple-300">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
-                    <span>Embeds ricos con estética Cyber Lilac</span>
+                <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
+                  Tarifa: Desde $40 USD
+                </div>
+              </div>
+
+              {/* Servicio 4 */}
+              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
+                <div>
+                  <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
+                    <Bot className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
-                    <span>Sincronización de rangos vía sockets</span>
+                  <h3 className="text-lg font-bold text-white mb-2">Bot de Discord a tu Gusto</h3>
+                  <p className="text-xs text-purple-200/70 leading-relaxed mb-4">
+                    Desarrollamos bots a medida en Discord.js: sistemas de tickets con transcripciones automáticas, comandos slash, embeds interactivos y sincronización de roles con Minecraft.
+                  </p>
+                </div>
+                <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
+                  Tarifa: Desde $20 USD
+                </div>
+              </div>
+
+              {/* Servicio 5 */}
+              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
+                <div>
+                  <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
+                    <Terminal className="w-5 h-5" />
                   </div>
+                  <h3 className="text-lg font-bold text-white mb-2">Plugins de Minecraft a Medida</h3>
+                  <p className="text-xs text-purple-200/70 leading-relaxed mb-4">
+                    Programación en Java 21 / Kotlin para Paper, Purpur y Spigot. Creación de mecánicas custom, GUIs interactivas, bases de datos seguras y optimización NMS sin fugas de memoria.
+                  </p>
+                </div>
+                <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
+                  Tarifa: Desde $25 USD
+                </div>
+              </div>
+
+              {/* Servicio 6 */}
+              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
+                <div>
+                  <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">Pack Completo Network</h3>
+                  <p className="text-xs text-purple-200/70 leading-relaxed mb-4">
+                    Solución integral para abrir tu proyecto: Servidor de Minecraft configurado + Plugins necesarios + Servidor de Discord con Bot + Web de presentación.
+                  </p>
+                </div>
+                <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
+                  Tarifa: Desde $80 USD
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* PORTAFOLIO INTERACTIVO */}
-        <section id="portafolio" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0B0614] border-t border-[#261442]/60">
+        {/* PORTAFOLIO REAL (ISREWARDS, ISSECURITY, NIXER) */}
+        <section id="portafolio" className="py-18 px-4 sm:px-6 lg:px-8 bg-[#0B0614] border-t border-[#261442]/60">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
               <div>
                 <span className="text-xs font-bold text-[#C084FC] tracking-wider uppercase font-mono">
-                  Casos de Éxito & Entregas Reales
+                  Trabajos Verificados
                 </span>
                 <h2 className="text-3xl font-bold text-white mt-1">
-                  Portafolio Técnico de Synthetix
+                  Portafolio Real de Synthetix Studio
                 </h2>
+                <p className="text-xs text-purple-300/70 mt-1">
+                  Proyectos creados y entregados con código y configuraciones verificadas.
+                </p>
               </div>
 
-              {/* Segmented Filter Control */}
-              <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[#120A21] border border-[#261442] overflow-x-auto">
+              <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[#120A21] border border-[#261442]">
                 <button
                   onClick={() => setPortfolioFilter('all')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     portfolioFilter === 'all'
                       ? 'bg-[#C084FC] text-black font-semibold shadow-sm'
                       : 'text-purple-300/70 hover:text-white'
                   }`}
                 >
-                  Todos los Proyectos
+                  Todos los Trabajos
                 </button>
                 <button
                   onClick={() => setPortfolioFilter('plugin')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     portfolioFilter === 'plugin'
                       ? 'bg-[#C084FC] text-black font-semibold shadow-sm'
                       : 'text-purple-300/70 hover:text-white'
                   }`}
                 >
-                  Plugins Minecraft
+                  Plugins (isrewards / issecurity)
                 </button>
                 <button
                   onClick={() => setPortfolioFilter('setup')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     portfolioFilter === 'setup'
                       ? 'bg-[#C084FC] text-black font-semibold shadow-sm'
                       : 'text-purple-300/70 hover:text-white'
                   }`}
                 >
-                  Setups de Servidores
-                </button>
-                <button
-                  onClick={() => setPortfolioFilter('bot')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 ${
-                    portfolioFilter === 'bot'
-                      ? 'bg-[#C084FC] text-black font-semibold shadow-sm'
-                      : 'text-purple-300/70 hover:text-white'
-                  }`}
-                >
-                  Bots de Discord
+                  Networks (Nixer)
                 </button>
               </div>
             </div>
 
-            {/* Portfolio Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPortfolio.map((item) => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {filteredWorks.map((work) => (
                 <div
-                  key={item.id}
-                  className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/50 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between group"
+                  key={work.id}
+                  className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/50 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-mono font-semibold text-[#C084FC] bg-purple-950/60 px-2.5 py-1 rounded-md border border-[#C084FC]/30">
-                        {item.badge}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-mono font-bold text-[#C084FC] bg-[#08050E] px-2.5 py-1 rounded border border-[#261442]">
+                        {work.badge}
                       </span>
-                      <span className="text-[11px] text-purple-400/60 font-mono">
-                        {item.file}
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
+                        {work.statusTag}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#C084FC] transition-colors">
-                      {item.title}
-                    </h3>
-                    <p className="text-xs text-purple-200/70 leading-relaxed mb-4">
-                      {item.desc}
+                    <h3 className="text-xl font-bold text-white mb-2 font-mono">{work.title}</h3>
+                    <p className="text-xs text-purple-200/80 leading-relaxed mb-4">
+                      {work.desc}
                     </p>
 
                     <div className="p-2.5 rounded-xl bg-[#08050E] border border-[#261442] mb-4 text-[11px] font-mono text-purple-300 flex items-center gap-2">
                       <Zap className="w-3.5 h-3.5 text-[#C084FC]" />
-                      <span>{item.stats}</span>
+                      <span>{work.stats}</span>
                     </div>
 
                     <ul className="space-y-1.5 text-xs text-purple-300/80 mb-6">
-                      {item.features.map((feat, idx) => (
+                      {work.features.map((feat, idx) => (
                         <li key={idx} className="flex items-center gap-2">
                           <span className="text-[#C084FC]">·</span>
                           <span>{feat}</span>
@@ -481,10 +416,10 @@ export default function HomePage() {
                         window.location.href = '/dashboard';
                       }
                     }}
-                    className="w-full py-2.5 px-4 rounded-xl bg-[#261442]/60 hover:bg-[#C084FC] hover:text-black text-purple-200 text-xs font-semibold transition-all flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#261442]/80 hover:bg-[#C084FC] hover:text-black text-purple-200 text-xs font-semibold transition-all flex items-center justify-center gap-2"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    Ver en Portal de Entregas
+                    <span>Ver en Portal de Entregas</span>
                   </button>
                 </div>
               ))}
@@ -492,18 +427,151 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* CÓMO TRABAJAMOS (EL FLUJO WEB + DISCORD) */}
-        <section id="flujo" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-[#261442]/60">
+        {/* SECCIÓN DE TARIFAS & PRECIOS */}
+        <section id="tarifas" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-[#261442]/60">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center max-w-2xl mx-auto mb-16">
+            <div className="text-center max-w-2xl mx-auto mb-14">
               <span className="text-xs font-bold text-[#C084FC] tracking-wider uppercase font-mono">
-                Flujo Transparente
+                Transparencia Total
               </span>
               <h2 className="text-3xl font-bold text-white mt-2 mb-3">
-                Cómo Trabajamos: De la Idea a la Entrega R2
+                Tarifas Claras & Precios de Referencia
               </h2>
               <p className="text-sm text-purple-300/70">
-                Sin intermediarios ni desorden en chats privados. Todo el ciclo de vida de tu software centralizado y documentado.
+                Precios base accesibles con entrega garantizada, soporte post-entrega y sin costos ocultos.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Tarifa 1 */}
+              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] flex flex-col justify-between">
+                <div>
+                  <div className="text-xs font-mono text-purple-400 uppercase mb-1">Básico / Entrada</div>
+                  <h3 className="text-lg font-bold text-white mb-2">Servidores & Bots Discord</h3>
+                  <div className="text-3xl font-extrabold text-[#C084FC] font-mono tabular-nums mb-4">
+                    $15 - $30 <span className="text-xs text-purple-400 font-normal">USD</span>
+                  </div>
+                  <p className="text-xs text-purple-200/70 mb-5 leading-relaxed">
+                    Ideal para comunidades que inician o servidores que requieren configuración de Discord o un bot de soporte a medida.
+                  </p>
+                  <ul className="space-y-2 text-xs text-purple-300 mb-6">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
+                      <span>Setup Discord: Roles y permisos blindados</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
+                      <span>Bot con sistema de tickets y embeds</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
+                      <span>Garantía de funcionamiento continuo</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  onClick={() => {
+                    if (user) setNewProjectModalOpen(true);
+                    else setAuthModalOpen(true);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-[#261442] hover:bg-[#C084FC] hover:text-black text-purple-200 text-xs font-semibold transition-colors"
+                >
+                  Solicitar este Servicio
+                </button>
+              </div>
+
+              {/* Tarifa 2 (Destacada) */}
+              <div className="p-6 rounded-2xl bg-[#120A21] border-2 border-[#C084FC] shadow-[0_0_30px_rgba(192,132,252,0.25)] flex flex-col justify-between relative">
+                <div className="absolute -top-3 right-6 bg-[#C084FC] text-black text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full uppercase">
+                  Más Solicitado
+                </div>
+                <div>
+                  <div className="text-xs font-mono text-[#C084FC] uppercase mb-1">Especialidad Gamer</div>
+                  <h3 className="text-lg font-bold text-white mb-2">Plugins & Setups Minecraft</h3>
+                  <div className="text-3xl font-extrabold text-white font-mono tabular-nums mb-4">
+                    $25 - $60 <span className="text-xs text-purple-400 font-normal">USD</span>
+                  </div>
+                  <p className="text-xs text-purple-200/70 mb-5 leading-relaxed">
+                    Desarrollo de plugins custom como <em>isrewards</em> o <em>issecurity</em>, o setup completo de modalidades (Survival, BoxPvP, Skyblock).
+                  </p>
+                  <ul className="space-y-2 text-xs text-purple-200 mb-6">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
+                      <span>Programación en Java 21 / Kotlin (Paper/Purpur)</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
+                      <span>20.0 TPS garantizados sin memory-leaks</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
+                      <span>Descarga directa de builds .jar compiladas</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  onClick={() => {
+                    if (user) setNewProjectModalOpen(true);
+                    else setAuthModalOpen(true);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#9333EA] to-[#C084FC] text-white text-xs font-bold shadow-md hover:from-[#A855F7] hover:to-[#D8B4FE] transition-all"
+                >
+                  Solicitar Plugin / Setup
+                </button>
+              </div>
+
+              {/* Tarifa 3 */}
+              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] flex flex-col justify-between">
+                <div>
+                  <div className="text-xs font-mono text-purple-400 uppercase mb-1">Completo / Suite</div>
+                  <h3 className="text-lg font-bold text-white mb-2">Web Portafolio & Full Network</h3>
+                  <div className="text-3xl font-extrabold text-[#C084FC] font-mono tabular-nums mb-4">
+                    $40 - $120 <span className="text-xs text-purple-400 font-normal">USD</span>
+                  </div>
+                  <p className="text-xs text-purple-200/70 mb-5 leading-relaxed">
+                    Diseño web completo para tu proyecto o paquete integral tipo <em>Nixer Network</em> con servidor, plugins, bot y presencia web.
+                  </p>
+                  <ul className="space-y-2 text-xs text-purple-300 mb-6">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
+                      <span>Web rápida, responsive y en modo oscuro gamer</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
+                      <span>Integración con tienda, Discord y estadísticas</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C084FC]" />
+                      <span>Chat en tiempo real y soporte dedicado</span>
+                    </li>
+                  </ul>
+                </div>
+                <button
+                  onClick={() => {
+                    if (user) setNewProjectModalOpen(true);
+                    else setAuthModalOpen(true);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-[#261442] hover:bg-[#C084FC] hover:text-black text-purple-200 text-xs font-semibold transition-colors"
+                >
+                  Cotizar Proyecto Completo
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CÓMO TRABAJAMOS */}
+        <section id="flujo" className="py-18 px-4 sm:px-6 lg:px-8 bg-[#0B0614] border-t border-[#261442]/60">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center max-w-2xl mx-auto mb-14">
+              <span className="text-xs font-bold text-[#C084FC] tracking-wider uppercase font-mono">
+                Proceso Transparente
+              </span>
+              <h2 className="text-3xl font-bold text-white mt-2 mb-3">
+                Cómo Trabajamos en Synthetix Studio
+              </h2>
+              <p className="text-sm text-purple-300/70">
+                Comunicación directa, seguimiento en tiempo real y entregas cifradas.
               </p>
             </div>
 
@@ -511,155 +579,59 @@ export default function HomePage() {
               {[
                 {
                   step: '01',
-                  title: 'Inicias Sesión con Discord',
-                  desc: 'Autenticación en 1 clic. Tu avatar y perfil quedan vinculados a tu cuenta de cliente de forma inmutable.',
-                  icon: Sparkles,
+                  title: 'Inicias Sesión',
+                  desc: 'Accede con Discord o correo. Tu perfil queda registrado de forma segura.',
                 },
                 {
                   step: '02',
-                  title: 'Describes tus Requerimientos',
-                  desc: 'Completa el formulario técnico con comandos, versiones y presupuestos. El equipo recibe un Rich Embed automático.',
-                  icon: Terminal,
+                  title: 'Solicitas tu Pedido',
+                  desc: 'Elige tu servicio (plugin, setup, bot o web) y define tu requerimiento.',
                 },
                 {
                   step: '03',
-                  title: 'Progreso en Vivo 0-100%',
-                  desc: 'Monitorea cada fase: Análisis, desarrollo NMS, pruebas de estrés y compilación con changelog en tiempo real.',
-                  icon: Cpu,
+                  title: 'Chat en Tiempo Real',
+                  desc: 'Comunícate en directo con el staff en el canal privado de tu proyecto.',
                 },
                 {
                   step: '04',
-                  title: 'Descarga Segura en R2',
-                  desc: 'Recibe tus archivos .jar compilados o .zip de configuraciones directamente desde el portal con un solo clic.',
-                  icon: Download,
+                  title: 'Descarga Inmutable',
+                  desc: 'Descarga tus archivos compilados (.jar / .zip) con changelog de versión.',
                 },
-              ].map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={idx}
-                    className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] relative flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-2xl font-extrabold text-[#C084FC] font-mono">
-                          {item.step}
-                        </span>
-                        <div className="w-8 h-8 rounded-lg bg-purple-950/60 border border-[#C084FC]/30 flex items-center justify-center text-[#C084FC]">
-                          <Icon className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <h3 className="text-base font-bold text-white mb-2">{item.title}</h3>
-                      <p className="text-xs text-purple-200/70 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* TESTIMONIOS / VOUCHES */}
-        <section id="testimonios" className="py-20 px-4 sm:px-6 lg:px-8 bg-[#0B0614] border-t border-[#261442]/60">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center max-w-2xl mx-auto mb-14">
-              <span className="text-xs font-bold text-[#C084FC] tracking-wider uppercase font-mono">
-                Vouches de Clientes Satisfechos
-              </span>
-              <h2 className="text-3xl font-bold text-white mt-2 mb-3">
-                Confiado por Dueños de Servidores Líderes
-              </h2>
-              <p className="text-sm text-purple-300/70">
-                Redes con cientos de jugadores confían sus núcleos a la ingeniería de Synthetix Studio.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                {
-                  name: 'PhoenixMC Network',
-                  role: 'Owner · 450 Jugadores Concurrentes',
-                  quote:
-                    'El plugin de economía personalizado manejó más de 300,000 transacciones durante nuestra apertura sin una sola caída de TPS. El sistema de entregas con changelogs facilitó enormemente las actualizaciones.',
-                  avatar: 'https://cdn.discordapp.com/embed/avatars/1.png',
-                },
-                {
-                  name: 'Vortex BoxPvP',
-                  role: 'Administrador General',
-                  quote:
-                    'Estábamos sufriendo crasheos por paquetes maliciosos y caídas de rendimiento en las minas. El setup de Purpur con protección NMS dejó el servidor en 20.0 TPS sólidos. 100% recomendados.',
-                  avatar: 'https://cdn.discordapp.com/embed/avatars/2.png',
-                },
-                {
-                  name: 'Aetheria Community',
-                  role: 'Founder & Community Lead',
-                  quote:
-                    'El bot de sincronización entre Discord y Minecraft con sistema de tickets revolucionó nuestro soporte. Cada vez que suben una build a la plataforma, recibimos el aviso al instante.',
-                  avatar: 'https://cdn.discordapp.com/embed/avatars/3.png',
-                },
-              ].map((vouch, idx) => (
+              ].map((item, idx) => (
                 <div
                   key={idx}
                   className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] flex flex-col justify-between"
                 >
-                  <div>
-                    <div className="flex items-center gap-1 text-amber-400 mb-4">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                      ))}
-                    </div>
-                    <p className="text-xs text-purple-200/90 leading-relaxed mb-6 italic">
-                      &ldquo;{vouch.quote}&rdquo;
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-4 border-t border-[#261442]">
-                    <img
-                      src={vouch.avatar}
-                      alt={vouch.name}
-                      className="w-9 h-9 rounded-full bg-purple-900 border border-[#C084FC]/30"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div>
-                      <div className="text-xs font-bold text-white">{vouch.name}</div>
-                      <div className="text-[10px] text-purple-400 font-mono">{vouch.role}</div>
-                    </div>
-                  </div>
+                  <span className="text-2xl font-extrabold text-[#C084FC] font-mono mb-3">
+                    {item.step}
+                  </span>
+                  <h3 className="text-base font-bold text-white mb-2">{item.title}</h3>
+                  <p className="text-xs text-purple-200/70 leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* CTA FINAL SECTION */}
+        {/* CTA FINAL */}
         <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-[#261442]/60">
           <div className="max-w-4xl mx-auto rounded-3xl bg-gradient-to-b from-[#120A21] to-[#08050E] border border-[#C084FC]/40 p-8 sm:p-12 text-center glow-lilac relative overflow-hidden">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
-              ¿Listo para Llevar tu Servidor al Siguiente Nivel?
+              ¿Listo para Crear tu Plugin, Servidor o Bot?
             </h2>
             <p className="text-xs sm:text-sm text-purple-200/80 max-w-xl mx-auto mb-8">
-              Inicia sesión con tu cuenta de Discord o correo, envía tu requerimiento y nuestro equipo comenzará a diseñar tu plugin o setup hoy mismo.
+              Inicia sesión, envíanos tu requerimiento y chatea en directo con nuestros desarrolladores.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 onClick={() => {
-                  if (user) {
-                    setNewProjectModalOpen(true);
-                  } else {
-                    setAuthModalOpen(true);
-                  }
+                  if (user) setNewProjectModalOpen(true);
+                  else setAuthModalOpen(true);
                 }}
                 className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#9333EA] to-[#C084FC] hover:from-[#A855F7] hover:to-[#D8B4FE] text-white font-bold text-xs rounded-xl shadow-[0_0_25px_rgba(192,132,252,0.4)] transition-all flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
-                Comenzar Solicitud de Proyecto
-              </button>
-              <button
-                onClick={() => setAuditModalOpen(true)}
-                className="w-full sm:w-auto px-6 py-3.5 bg-[#120A21] hover:bg-[#1a0e30] border border-[#261442] text-purple-200 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
-              >
-                <Send className="w-4 h-4 text-[#C084FC]" />
-                Ver Notificaciones de Discord
+                Comenzar Solicitud de Servicio
               </button>
             </div>
           </div>

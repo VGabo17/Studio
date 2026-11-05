@@ -1,4 +1,12 @@
-export type ServiceType = 'plugin_mc' | 'setup_mc' | 'bot_discord' | 'full_pack';
+export type UserRole = 'client' | 'support' | 'developer_junior' | 'developer_senior' | 'admin';
+
+export type ServiceType =
+  | 'plugin_mc'        // Plugins de Minecraft a medida
+  | 'setup_mc'         // Configuración de Servidores de Minecraft
+  | 'setup_dc'         // Configuración de Servidores de Discord
+  | 'web_portfolio'    // Creación de Web Portafolio
+  | 'bot_discord'      // Bot de Discord a tu gusto
+  | 'full_pack';       // Pack Completo Network
 
 export type ProjectStatus = 'pending' | 'in_development' | 'testing' | 'completed' | 'cancelled';
 
@@ -8,13 +16,14 @@ export interface User {
   global_name: string | null;
   avatar: string | null;
   email: string | null;
-  role: 'client' | 'admin';
+  role: UserRole;
   created_at: string;
 }
 
 export interface Project {
   id: string; // 'PRJ-XXXX'
   client_id: string;
+  assigned_to?: string | null; // Staff asignado
   title: string;
   service_type: ServiceType;
   description: string;
@@ -30,6 +39,7 @@ export interface Project {
   };
   deliveries?: Delivery[];
   comments?: ProjectComment[];
+  chat_messages?: ProjectChatMessage[];
 }
 
 export interface Delivery {
@@ -53,7 +63,21 @@ export interface ProjectComment {
     username: string;
     global_name: string | null;
     avatar: string | null;
-    role: 'client' | 'admin';
+    role: UserRole;
+  };
+}
+
+export interface ProjectChatMessage {
+  id: string;
+  project_id: string;
+  user_id: string;
+  message: string;
+  created_at: string;
+  author?: {
+    username: string;
+    global_name: string | null;
+    avatar: string | null;
+    role: UserRole;
   };
 }
 
@@ -63,12 +87,12 @@ export interface JWTPayload {
   globalName: string | null;
   avatar: string | null;
   email: string | null;
-  role: 'client' | 'admin';
+  role: UserRole;
   iat?: number;
   exp?: number;
 }
 
-export type WebhookNotificationType = 'NEW_ORDER' | 'STATUS_CHANGED' | 'NEW_DELIVERY';
+export type WebhookNotificationType = 'NEW_ORDER' | 'STATUS_CHANGED' | 'NEW_DELIVERY' | 'CHAT_MESSAGE';
 
 export interface WebhookNotificationPayload {
   projectId: string;
