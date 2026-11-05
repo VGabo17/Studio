@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Synthetix Studio",
+  "description": "Estudio de desarrollo de alto nivel para plugins de Minecraft, setups de servidores y bots de Discord, con portal de clientes y sistema de entregas autónomo.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

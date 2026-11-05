@@ -1,1 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --bg-dark-bg: #08050E;
+    --bg-dark-card: #120A21;
+    --border-dark-border: #261442;
+    --accent-lilac: #C084FC;
+    --accent-glow: #A855F7;
+  }
+
+  body {
+    background-color: #08050E;
+    color: #F3E8FF;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+}
+
+/* Custom Lilac Glows and Cyber Accents */
+.glow-lilac {
+  box-shadow: 0 0 25px -5px rgba(192, 132, 252, 0.35);
+}
+
+.glow-lilac-sm {
+  box-shadow: 0 0 15px -3px rgba(192, 132, 252, 0.25);
+}
+
+.glow-lilac-lg {
+  box-shadow: 0 0 35px -5px rgba(192, 132, 252, 0.45);
+}
+
+.border-lilac-glow {
+  border-color: #C084FC;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.3);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #08050E;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #261442;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C084FC;
+}
