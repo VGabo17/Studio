@@ -5,6 +5,7 @@ import {
   ProjectChatMessage,
   ProjectStatus,
   ServiceType,
+  ServiceRate,
   User,
   UserRole,
 } from './types';
@@ -18,6 +19,7 @@ interface DatabaseState {
   comments: Map<string, ProjectComment>;
   chatMessages: Map<string, ProjectChatMessage>;
   chatSubscribers: Map<string, Set<(msg: ProjectChatMessage) => void>>;
+  serviceRates: Map<ServiceType, ServiceRate>;
 }
 
 declare global {
@@ -35,6 +37,69 @@ function initDb(): DatabaseState {
   const comments = new Map<string, ProjectComment>();
   const chatMessages = new Map<string, ProjectChatMessage>();
   const chatSubscribers = new Map<string, Set<(msg: ProjectChatMessage) => void>>();
+  const serviceRates = new Map<ServiceType, ServiceRate>();
+
+  // 0. TARIFAS Y PRECIOS BASE DE SERVICIOS
+  const defaultRates: ServiceRate[] = [
+    {
+      service_type: 'setup_dc',
+      name: 'Configuración Servidor Discord',
+      category: 'Discord & Community',
+      base_price: 15,
+      delivery_time: '24-48 horas',
+      description: 'Arquitectura completa de roles, permisos anti-raid, tickets de soporte y embeds personalizados.',
+      features: ['Estructura de canales y roles', 'Sistema de tickets de soporte', 'Bots de moderación y auto-rol', 'Protección anti-raid y anti-spam', 'Estética gamer con embeds'],
+    },
+    {
+      service_type: 'bot_discord',
+      name: 'Bot de Discord a tu Gusto',
+      category: 'Desarrollo a Medida',
+      base_price: 20,
+      delivery_time: '2-4 días',
+      description: 'Bot personalizado en Node.js/Discord.js con comandos slash, sincronización Minecraft y embeds interactivos.',
+      features: ['Comandos Slash (/verificar, /tienda, /stats)', 'Sincronización cuenta Minecraft y roles', 'Sistemas de sorteos y bienvenidas dinámicas', 'Panel de botones y modales interactivos', 'Hosting listo para 24/7'],
+    },
+    {
+      service_type: 'plugin_mc',
+      name: 'Plugins de Minecraft a Medida',
+      category: 'Java / Paper / Purpur',
+      base_price: 25,
+      delivery_time: '3-7 días',
+      description: 'Desarrollo en Paper, Purpur y Spigot (Java 17/21). NMS limpio, bases de datos MySQL/SQLite y 0% lag.',
+      features: ['Código nativo PaperMC & Purpur', 'Mapeo NMS optimizado', 'Integración con PlaceholderAPI y Vault', 'Configs en YAML 100% editables', '30 días de garantía y soporte'],
+    },
+    {
+      service_type: 'setup_mc',
+      name: 'Configuración Servidor Minecraft',
+      category: 'Setup & Optimización',
+      base_price: 35,
+      delivery_time: '2-5 días',
+      description: 'Configuración llave en mano para Survival Custom, BoxPvP, Skyblock o Practice. Optimización de TPS garantizada a 20.0.',
+      features: ['20.0 TPS estables con 80+ jugadores', 'Economía balanceada y rangos configurados', 'Anti-cheat configurado sin falsos positivos', 'Traducción de mensajes al español', 'Guía de mantenimiento y backup'],
+    },
+    {
+      service_type: 'web_portfolio',
+      name: 'Creación de Web Portafolio',
+      category: 'Desarrollo Frontend',
+      base_price: 40,
+      delivery_time: '3-6 días',
+      description: 'Sitio web moderno y responsivo para tu servidor o marca personal gamer con diseño Cyber Lilac.',
+      features: ['Diseño responsive móvil y desktop', 'Integración con tienda Tebex/CraftingStore', 'Visualización de jugadores online en vivo', 'Animaciones fluidas y modo oscuro nativo', 'Dominio personalizado y SSL'],
+    },
+    {
+      service_type: 'full_pack',
+      name: 'Pack Completo Network',
+      category: 'Solución Integral',
+      base_price: 80,
+      delivery_time: '5-10 días',
+      description: 'Solución todo en uno: Bungee/Velocity + Servidores + Discord sincronizado + Web + Plugins a medida.',
+      features: ['Proxy Velocity ultra optimizado', '2 o más modalidades configuradas', 'Bot de Discord totalmente vinculado', 'Web informativa y portal de usuarios', 'Soporte prioritario 1 a 1 por 60 días'],
+    },
+  ];
+
+  defaultRates.forEach((rate) => {
+    serviceRates.set(rate.service_type, rate);
+  });
 
   // 1. USUARIOS CON ROLES GRANULARES
   const adminUser: User = {
@@ -229,6 +294,7 @@ function initDb(): DatabaseState {
     comments,
     chatMessages,
     chatSubscribers,
+    serviceRates,
   };
 
   global.__synthetix_db = state;
@@ -517,5 +583,29 @@ export const dbService = {
           }
         : undefined,
     };
+  },
+
+  // TARIFAS Y PRECIOS OFICIALES EDITABLES
+  async getServiceRates(): Promise<ServiceRate[]> {
+    return Array.from(db.serviceRates.values());
+  },
+
+  async getServiceRate(serviceType: ServiceType): Promise<ServiceRate | null> {
+    return db.serviceRates.get(serviceType) || null;
+  },
+
+  async updateServiceRate(
+    serviceType: ServiceType,
+    updates: Partial<ServiceRate>
+  ): Promise<ServiceRate | null> {
+    const existing = db.serviceRates.get(serviceType);
+    if (!existing) return null;
+    const updated: ServiceRate = {
+      ...existing,
+      ...updates,
+      service_type: serviceType,
+    };
+    db.serviceRates.set(serviceType, updated);
+    return updated;
   },
 };

@@ -10,6 +10,16 @@ export type ServiceType =
 
 export type ProjectStatus = 'pending' | 'in_development' | 'testing' | 'completed' | 'cancelled';
 
+export interface ServiceRate {
+  service_type: ServiceType;
+  name: string;
+  category: string;
+  base_price: number; // in USD
+  delivery_time: string;
+  description: string;
+  features: string[];
+}
+
 export interface User {
   id: string; // Discord snowflake or ID
   username: string;

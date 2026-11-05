@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'motion/react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { NewProjectModal } from '@/components/NewProjectModal';
 import { DiscordEmbedAuditModal } from '@/components/DiscordEmbedAuditModal';
-import { User, UserRole } from '@/lib/types';
+import { ServiceRate, User, UserRole } from '@/lib/types';
 import {
   Terminal,
   Server,
@@ -30,19 +31,33 @@ import {
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
+  const [rates, setRates] = useState<ServiceRate[]>([]);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
   const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [portfolioFilter, setPortfolioFilter] = useState<'all' | 'plugin' | 'setup'>('all');
 
+  const getRatePrice = (type: string, fallback: number): number => {
+    const found = rates.find((r) => r.service_type === type);
+    return found ? found.base_price : fallback;
+  };
+
   const fetchSession = async () => {
     try {
-      const res = await fetch('/api/auth/me');
-      const data = await res.json();
+      const [authRes, ratesRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/admin/rates'),
+      ]);
+      const data = await authRes.json();
+      const ratesData = await ratesRes.json();
+
       if (data.authenticated && data.user) {
         setUser(data.user);
       } else {
         setUser(null);
+      }
+      if (ratesData.success) {
+        setRates(ratesData.rates);
       }
     } catch {
       setUser(null);
@@ -53,13 +68,20 @@ export default function HomePage() {
     let active = true;
     const loadSession = async () => {
       try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
+        const [authRes, ratesRes] = await Promise.all([
+          fetch('/api/auth/me'),
+          fetch('/api/admin/rates'),
+        ]);
+        const data = await authRes.json();
+        const ratesData = await ratesRes.json();
         if (active) {
           if (data.authenticated && data.user) {
             setUser(data.user);
           } else {
             setUser(null);
+          }
+          if (ratesData.success) {
+            setRates(ratesData.rates);
           }
         }
       } catch {
@@ -224,7 +246,11 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Servicio 1 */}
-              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
+              <motion.div
+                whileHover={{ scale: 1.025, y: -4 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.3)] transition-all flex flex-col justify-between"
+              >
                 <div>
                   <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
                     <Server className="w-5 h-5" />
@@ -235,12 +261,16 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
-                  Tarifa: Desde $35 USD
+                  Tarifa: Desde ${getRatePrice('setup_mc', 35)} USD
                 </div>
-              </div>
+              </motion.div>
 
               {/* Servicio 2 */}
-              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
+              <motion.div
+                whileHover={{ scale: 1.025, y: -4 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.3)] transition-all flex flex-col justify-between"
+              >
                 <div>
                   <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
                     <Shield className="w-5 h-5" />
@@ -251,12 +281,16 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
-                  Tarifa: Desde $15 USD
+                  Tarifa: Desde ${getRatePrice('setup_dc', 15)} USD
                 </div>
-              </div>
+              </motion.div>
 
               {/* Servicio 3 */}
-              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
+              <motion.div
+                whileHover={{ scale: 1.025, y: -4 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.3)] transition-all flex flex-col justify-between"
+              >
                 <div>
                   <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
                     <Globe className="w-5 h-5" />
@@ -267,12 +301,16 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
-                  Tarifa: Desde $40 USD
+                  Tarifa: Desde ${getRatePrice('web_portfolio', 40)} USD
                 </div>
-              </div>
+              </motion.div>
 
               {/* Servicio 4 */}
-              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
+              <motion.div
+                whileHover={{ scale: 1.025, y: -4 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.3)] transition-all flex flex-col justify-between"
+              >
                 <div>
                   <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
                     <Bot className="w-5 h-5" />
@@ -283,12 +321,16 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
-                  Tarifa: Desde $20 USD
+                  Tarifa: Desde ${getRatePrice('bot_discord', 20)} USD
                 </div>
-              </div>
+              </motion.div>
 
               {/* Servicio 5 */}
-              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
+              <motion.div
+                whileHover={{ scale: 1.025, y: -4 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.3)] transition-all flex flex-col justify-between"
+              >
                 <div>
                   <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
                     <Terminal className="w-5 h-5" />
@@ -299,12 +341,16 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
-                  Tarifa: Desde $25 USD
+                  Tarifa: Desde ${getRatePrice('plugin_mc', 25)} USD
                 </div>
-              </div>
+              </motion.div>
 
               {/* Servicio 6 */}
-              <div className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between">
+              <motion.div
+                whileHover={{ scale: 1.025, y: -4 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.3)] transition-all flex flex-col justify-between"
+              >
                 <div>
                   <div className="w-11 h-11 rounded-xl bg-purple-950/80 border border-[#C084FC]/40 flex items-center justify-center text-[#C084FC] mb-4">
                     <Layers className="w-5 h-5" />
@@ -315,9 +361,9 @@ export default function HomePage() {
                   </p>
                 </div>
                 <div className="text-xs font-mono text-[#C084FC] font-semibold pt-3 border-t border-[#261442]">
-                  Tarifa: Desde $80 USD
+                  Tarifa: Desde ${getRatePrice('full_pack', 80)} USD
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </section>
@@ -374,9 +420,11 @@ export default function HomePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {filteredWorks.map((work) => (
-                <div
+                <motion.div
                   key={work.id}
-                  className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/50 hover:shadow-[0_0_25px_rgba(192,132,252,0.2)] transition-all flex flex-col justify-between"
+                  whileHover={{ scale: 1.025, y: -4 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                  className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/70 hover:shadow-[0_0_30px_rgba(192,132,252,0.3)] transition-all flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
@@ -421,7 +469,7 @@ export default function HomePage() {
                     <Download className="w-3.5 h-3.5" />
                     <span>Ver en Portal de Entregas</span>
                   </button>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>

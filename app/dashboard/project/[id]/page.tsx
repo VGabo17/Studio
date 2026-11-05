@@ -11,7 +11,7 @@ import { ProjectChat } from '@/components/ProjectChat';
 import { DeliveryUploaderModal } from '@/components/DeliveryUploaderModal';
 import { DiscordEmbedAuditModal } from '@/components/DiscordEmbedAuditModal';
 import { Project, ProjectStatus, User, UserRole } from '@/lib/types';
-import { canUploadDeliveries, isStaff } from '@/lib/permissions';
+import { canUploadDeliveries, canSetPrice, isStaff } from '@/lib/permissions';
 import {
   ArrowLeft,
   Terminal,
@@ -28,6 +28,10 @@ import {
   Loader2,
   AlertCircle,
   Lock,
+  Edit3,
+  Check,
+  X,
+  DollarSign,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
@@ -90,6 +94,33 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [uploaderOpen, setUploaderOpen] = useState(false);
   const [auditModalOpen, setAuditModalOpen] = useState(false);
+
+  // Edición directa de tarifa acordada para administradores
+  const [editingPrice, setEditingPrice] = useState(false);
+  const [priceInput, setPriceInput] = useState('');
+  const [savingPrice, setSavingPrice] = useState(false);
+
+  const handleSavePrice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingPrice(true);
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ price: parseFloat(priceInput) || null }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al actualizar cotización');
+      }
+      setProject(data.project);
+      setEditingPrice(false);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error al guardar precio');
+    } finally {
+      setSavingPrice(false);
+    }
+  };
 
   const fetchProjectData = async () => {
     try {
@@ -203,6 +234,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const srvCfg = SERVICE_CONFIG[project.service_type] || SERVICE_CONFIG.plugin_mc;
   const SrvIcon = srvCfg.icon;
   const canUpload = user ? canUploadDeliveries(user.role) : false;
+  const canPrice = user ? canSetPrice(user.role) : false;
 
   return (
     <div className="min-h-screen bg-[#08050E] text-[#F3E8FF] flex flex-col selection:bg-[#C084FC]/30 selection:text-white">
@@ -257,15 +289,77 @@ export default function ProjectDetailPage({ params }: PageProps) {
               </h1>
             </div>
 
-            <div className="flex items-center gap-4">
-              {project.price && (
-                <div className="text-right">
-                  <div className="text-[10px] text-purple-400 uppercase font-mono">Tarifa Acordada</div>
-                  <div className="text-xl font-extrabold text-emerald-400 font-mono tabular-nums">
-                    ${project.price} USD
-                  </div>
+            <div className="flex items-center flex-wrap gap-4">
+              {editingPrice ? (
+                <form
+                  onSubmit={handleSavePrice}
+                  className="flex items-center gap-2 bg-[#08050E] p-2 rounded-xl border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                >
+                  <span className="text-xs font-mono text-purple-400 font-bold">$</span>
+                  <input
+                    type="number"
+                    min="5"
+                    max="10000"
+                    value={priceInput}
+                    onChange={(e) => setPriceInput(e.target.value)}
+                    placeholder="Tarifa USD"
+                    className="w-24 px-2 py-1 bg-[#120A21] border border-[#261442] text-xs font-mono font-bold text-white rounded focus:outline-none"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={savingPrice}
+                    className="p-1.5 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-colors"
+                    title="Guardar Tarifa"
+                  >
+                    {savingPrice ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingPrice(false)}
+                    className="p-1.5 rounded-lg bg-[#261442] text-purple-300 hover:text-white transition-colors"
+                    title="Cancelar"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  {project.price ? (
+                    <div className="text-right">
+                      <div className="text-[10px] text-purple-400 uppercase font-mono">Tarifa Acordada</div>
+                      <div className="text-xl font-extrabold text-emerald-400 font-mono tabular-nums">
+                        ${project.price} USD
+                      </div>
+                    </div>
+                  ) : canPrice ? (
+                    <button
+                      onClick={() => {
+                        setPriceInput('');
+                        setEditingPrice(true);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs font-semibold hover:bg-amber-900/40 flex items-center gap-1.5 transition-colors"
+                    >
+                      <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                      Asignar Tarifa
+                    </button>
+                  ) : null}
+
+                  {canPrice && project.price && (
+                    <button
+                      onClick={() => {
+                        setPriceInput(project.price?.toString() || '');
+                        setEditingPrice(true);
+                      }}
+                      className="p-1.5 rounded-lg bg-[#261442] text-purple-300 hover:text-white hover:bg-[#341b5a] transition-colors"
+                      title="Editar Tarifa como Administrador"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-amber-400" />
+                    </button>
+                  )}
                 </div>
               )}
+
               {canUpload && (
                 <button
                   onClick={() => setUploaderOpen(true)}

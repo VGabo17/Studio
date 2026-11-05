@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
@@ -293,9 +294,13 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* 3 Metrics Cards */}
+        {/* 3 Metrics Cards with Framer Motion hover scale & shadow glow */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
-          <div className="p-5 rounded-2xl bg-[#120A21] border border-[#261442]">
+          <motion.div
+            whileHover={{ scale: 1.025, y: -3 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="p-5 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_30px_rgba(192,132,252,0.3)] transition-all cursor-default"
+          >
             <div className="flex items-center justify-between text-purple-400 mb-2">
               <span className="text-xs font-medium">Proyectos en Desarrollo</span>
               <Clock className="w-4 h-4 text-[#C084FC]" />
@@ -306,9 +311,13 @@ export default function DashboardPage() {
             <div className="text-[11px] text-purple-300/60 mt-1">
               Monitoreo de avance y sprints
             </div>
-          </div>
+          </motion.div>
 
-          <div className="p-5 rounded-2xl bg-[#120A21] border border-[#261442]">
+          <motion.div
+            whileHover={{ scale: 1.025, y: -3 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="p-5 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-emerald-500/60 hover:shadow-[0_0_30px_rgba(52,211,153,0.3)] transition-all cursor-default"
+          >
             <div className="flex items-center justify-between text-purple-400 mb-2">
               <span className="text-xs font-medium">Proyectos Finalizados</span>
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -319,9 +328,13 @@ export default function DashboardPage() {
             <div className="text-[11px] text-purple-300/60 mt-1">
               Versiones estables y garantizadas
             </div>
-          </div>
+          </motion.div>
 
-          <div className="p-5 rounded-2xl bg-[#120A21] border border-[#261442]">
+          <motion.div
+            whileHover={{ scale: 1.025, y: -3 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+            className="p-5 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_30px_rgba(192,132,252,0.35)] transition-all cursor-default"
+          >
             <div className="flex items-center justify-between text-purple-400 mb-2">
               <span className="text-xs font-medium">Builds & Entregas Seguras</span>
               <Download className="w-4 h-4 text-[#C084FC]" />
@@ -332,7 +345,7 @@ export default function DashboardPage() {
             <div className="text-[11px] text-purple-300/60 mt-1">
               Binarios .jar y configuraciones .zip
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Project Section Header & Filter Tabs */}
@@ -419,9 +432,11 @@ export default function DashboardPage() {
               const SrvIcon = srvCfg.icon;
 
               return (
-                <div
+                <motion.div
                   key={project.id}
-                  className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/50 hover:shadow-[0_0_25px_rgba(192,132,252,0.15)] transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+                  whileHover={{ scale: 1.015, y: -2 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                  className="p-6 rounded-2xl bg-[#120A21] border border-[#261442] hover:border-[#C084FC]/60 hover:shadow-[0_0_30px_rgba(192,132,252,0.22)] transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6"
                 >
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-3 mb-2">
@@ -481,7 +496,7 @@ export default function DashboardPage() {
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </Link>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>

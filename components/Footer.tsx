@@ -32,10 +32,6 @@ export function Footer() {
             <FileText className="w-3.5 h-3.5 text-purple-400" />
             Términos del Servicio (TOS)
           </button>
-          <Link href="/admin" className="hover:text-amber-400 transition-colors flex items-center gap-1">
-            <Shield className="w-3.5 h-3.5 text-amber-400" />
-            Portal Administrativo
-          </Link>
         </div>
 
         <div className="text-xs text-purple-400/60 font-mono text-center md:text-right">
@@ -67,7 +63,7 @@ export function Footer() {
                 <strong>2. Soporte y Actualizaciones:</strong> Todos los pedidos incluyen 30 días de garantía y corrección de bugs sin costo adicional tras la entrega de la versión RELEASE.
               </p>
               <p>
-                <strong>3. Entregas Autónomas:</strong> Los binarios permanecen resguardados de forma inmutable en Cloudflare R2 con hashes de integridad verificados.
+                <strong>3. Entregas Autónomas:</strong> Los binarios permanecen resguardados de forma inmutable en bóvedas de almacenamiento seguro cifrado con hashes de integridad SHA-256 verificados.
               </p>
               <p>
                 <strong>4. Reembolsos:</strong> Los proyectos cancelados antes de iniciar el desarrollo técnico reciben reembolso del 100%. Una vez comenzada la fase de código NMS, se prorratea el trabajo realizado.

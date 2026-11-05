@@ -8,7 +8,7 @@ import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { DeliveryUploaderModal } from '@/components/DeliveryUploaderModal';
 import { DiscordEmbedAuditModal } from '@/components/DiscordEmbedAuditModal';
-import { Project, ProjectStatus, User, UserRole } from '@/lib/types';
+import { Project, ProjectStatus, ServiceRate, User, UserRole } from '@/lib/types';
 import {
   isStaff,
   canCompleteProject,
@@ -33,6 +33,10 @@ import {
   Bot,
   MessageSquare,
   Lock,
+  ArrowLeft,
+  Tag,
+  Save,
+  X,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
@@ -75,11 +79,13 @@ export default function AdminPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [rates, setRates] = useState<ServiceRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [uploaderOpen, setUploaderOpen] = useState(false);
   const [selectedProjectIdForUpload, setSelectedProjectIdForUpload] = useState<string | undefined>();
   const [auditModalOpen, setAuditModalOpen] = useState(false);
+  const [ratesModalOpen, setRatesModalOpen] = useState(false);
 
   // Modal de edición de proyecto
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -87,6 +93,12 @@ export default function AdminPage() {
   const [editProgress, setEditProgress] = useState<number>(0);
   const [editPrice, setEditPrice] = useState<string>('');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // Edición de tarifas oficiales
+  const [editingRate, setEditingRate] = useState<ServiceRate | null>(null);
+  const [ratePriceInput, setRatePriceInput] = useState<string>('');
+  const [rateDeliveryInput, setRateDeliveryInput] = useState<string>('');
+  const [savingRate, setSavingRate] = useState(false);
 
   const fetchAdminData = async () => {
     setLoading(true);
@@ -101,10 +113,17 @@ export default function AdminPage() {
       setUser(authData.user);
 
       if (isStaff(authData.user.role)) {
-        const prjRes = await fetch('/api/projects');
+        const [prjRes, ratesRes] = await Promise.all([
+          fetch('/api/projects'),
+          fetch('/api/admin/rates'),
+        ]);
         const prjData = await prjRes.json();
+        const ratesData = await ratesRes.json();
         if (prjData.success) {
           setProjects(prjData.projects);
+        }
+        if (ratesData.success) {
+          setRates(ratesData.rates);
         }
       }
     } catch {
@@ -129,10 +148,15 @@ export default function AdminPage() {
         setUser(authData.user);
 
         if (isStaff(authData.user.role)) {
-          const prjRes = await fetch('/api/projects');
+          const [prjRes, ratesRes] = await Promise.all([
+            fetch('/api/projects'),
+            fetch('/api/admin/rates'),
+          ]);
           const prjData = await prjRes.json();
-          if (active && prjData.success) {
-            setProjects(prjData.projects);
+          const ratesData = await ratesRes.json();
+          if (active) {
+            if (prjData.success) setProjects(prjData.projects);
+            if (ratesData.success) setRates(ratesData.rates);
           }
         }
       } catch {
@@ -167,6 +191,42 @@ export default function AdminPage() {
     setEditStatus(project.status);
     setEditProgress(project.progress);
     setEditPrice(project.price ? project.price.toString() : '');
+  };
+
+  const handleOpenRateEdit = (rate: ServiceRate) => {
+    setEditingRate(rate);
+    setRatePriceInput(rate.base_price.toString());
+    setRateDeliveryInput(rate.delivery_time);
+  };
+
+  const handleSaveRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRate) return;
+    setSavingRate(true);
+    try {
+      const res = await fetch('/api/admin/rates', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_type: editingRate.service_type,
+          base_price: parseFloat(ratePriceInput),
+          delivery_time: rateDeliveryInput,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al actualizar tarifa');
+      }
+
+      setRates((prev) =>
+        prev.map((r) => (r.service_type === editingRate.service_type ? data.rate : r))
+      );
+      setEditingRate(null);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error al guardar tarifa');
+    } finally {
+      setSavingRate(false);
+    }
   };
 
   const handleSaveProject = async (e: React.FormEvent) => {
@@ -219,27 +279,22 @@ export default function AdminPage() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {!staffMember ? (
-          <div className="p-12 rounded-3xl bg-[#120A21] border border-amber-500/30 text-center max-w-lg mx-auto shadow-[0_0_35px_rgba(251,191,36,0.15)] my-12">
-            <div className="w-14 h-14 rounded-full bg-amber-950/60 border border-amber-500/50 flex items-center justify-center text-amber-400 mx-auto mb-4">
-              <Shield className="w-8 h-8" />
+          <div className="p-12 rounded-3xl bg-[#120A21] border border-red-500/30 text-center max-w-lg mx-auto shadow-[0_0_35px_rgba(239,68,68,0.15)] my-12">
+            <div className="w-14 h-14 rounded-full bg-red-950/60 border border-red-500/50 flex items-center justify-center text-red-400 mx-auto mb-4">
+              <Lock className="w-7 h-7" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Panel Restringido a Miembros del Staff</h2>
+            <h2 className="text-xl font-bold text-white mb-2">403 · Acceso Administrativo Restringido</h2>
             <p className="text-xs text-purple-300/70 mb-6 leading-relaxed">
-              Este panel requiere un rol de staff autorizado (<code className="text-amber-400 font-mono">admin</code>, <code className="text-[#C084FC] font-mono">developer_senior</code>, <code className="text-cyan-400 font-mono">developer_junior</code> o <code className="text-emerald-400 font-mono">support</code>).
+              Este portal técnico está estrictamente restringido a desarrolladores y administradores autorizados mediante Discord OAuth2 y claves de sesión encriptadas.
             </p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <button
-                onClick={() => handleSwitchPersona('developer_senior')}
-                className="px-4 py-2.5 bg-[#C084FC] text-black font-bold text-xs rounded-xl shadow-sm"
+            <div className="flex justify-center">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#261442] hover:bg-[#3b1a6b] text-purple-200 text-xs font-semibold rounded-xl transition-colors"
               >
-                Probar como Dev Senior
-              </button>
-              <button
-                onClick={() => handleSwitchPersona('admin')}
-                className="px-4 py-2.5 bg-amber-400 text-black font-bold text-xs rounded-xl shadow-sm"
-              >
-                Probar como Admin
-              </button>
+                <ArrowLeft className="w-4 h-4" />
+                Volver a mi Portal de Cliente
+              </Link>
             </div>
           </div>
         ) : (
@@ -265,7 +320,16 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center flex-wrap gap-3">
+                {canPrice && (
+                  <button
+                    onClick={() => setRatesModalOpen(true)}
+                    className="px-4 py-2.5 bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-500/40 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                  >
+                    <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                    Editar Tarifas del Catálogo
+                  </button>
+                )}
                 <button
                   onClick={() => setAuditModalOpen(true)}
                   className="px-4 py-2.5 bg-[#261442] hover:bg-[#341b5a] text-purple-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
@@ -538,6 +602,132 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </form>
+                </div>
+              </div>
+            )}
+
+            {/* Modal de Tarifas Oficiales del Catálogo */}
+            {ratesModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-[#120A21] border border-amber-500/40 rounded-2xl max-w-2xl w-full p-6 text-purple-200 shadow-[0_0_40px_rgba(245,158,11,0.2)] max-h-[90vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-4 border-b border-[#261442] mb-6">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-amber-950/60 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                        <DollarSign className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">Tarifas & Catálogo Oficial</h3>
+                        <p className="text-xs text-purple-300/70">
+                          Modifica los precios base y tiempos de entrega que se muestran a los clientes.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setRatesModalOpen(false);
+                        setEditingRate(null);
+                      }}
+                      className="p-1 rounded-lg text-purple-400 hover:text-white hover:bg-[#261442] transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {rates.map((rate) => {
+                      const isEditingThis = editingRate?.service_type === rate.service_type;
+
+                      return (
+                        <div
+                          key={rate.service_type}
+                          className="p-4 rounded-xl bg-[#08050E] border border-[#261442] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-mono text-xs font-bold text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/30">
+                                {rate.service_type}
+                              </span>
+                              <h4 className="text-sm font-bold text-white">{rate.name}</h4>
+                            </div>
+                            <p className="text-xs text-purple-300/70">{rate.description}</p>
+                            <div className="text-[11px] text-purple-400 font-mono mt-1">
+                              Entrega: {rate.delivery_time}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            {isEditingThis ? (
+                              <form onSubmit={handleSaveRate} className="flex items-center gap-2">
+                                <div className="relative">
+                                  <span className="absolute left-2.5 top-2 text-xs font-mono text-purple-400">$</span>
+                                  <input
+                                    type="number"
+                                    min="5"
+                                    max="5000"
+                                    value={ratePriceInput}
+                                    onChange={(e) => setRatePriceInput(e.target.value)}
+                                    className="w-20 pl-6 pr-2 py-1.5 rounded-lg bg-[#120A21] border border-amber-500 text-xs font-mono font-bold text-white focus:outline-none"
+                                    required
+                                  />
+                                </div>
+                                <input
+                                  type="text"
+                                  value={rateDeliveryInput}
+                                  onChange={(e) => setRateDeliveryInput(e.target.value)}
+                                  className="w-24 px-2 py-1.5 rounded-lg bg-[#120A21] border border-amber-500 text-xs text-white focus:outline-none"
+                                  placeholder="Tiempo"
+                                  required
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={savingRate}
+                                  className="p-2 rounded-lg bg-emerald-500 text-black hover:bg-emerald-400 transition-colors"
+                                  title="Guardar"
+                                >
+                                  {savingRate ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingRate(null)}
+                                  className="p-2 rounded-lg bg-[#261442] text-purple-300 hover:text-white transition-colors"
+                                  title="Cancelar"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </form>
+                            ) : (
+                              <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                  <div className="text-sm font-extrabold text-emerald-400 font-mono">
+                                    ${rate.base_price} USD
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleOpenRateEdit(rate)}
+                                  className="px-3 py-1.5 rounded-lg bg-[#261442] hover:bg-amber-400 hover:text-black text-amber-300 text-xs font-semibold transition-colors flex items-center gap-1.5"
+                                >
+                                  <Sliders className="w-3 h-3" />
+                                  <span>Editar</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-[#261442] flex justify-end">
+                    <button
+                      onClick={() => {
+                        setRatesModalOpen(false);
+                        setEditingRate(null);
+                      }}
+                      className="px-4 py-2 bg-[#261442] hover:bg-[#341b5a] text-purple-200 text-xs font-semibold rounded-xl transition-colors"
+                    >
+                      Cerrar Panel de Tarifas
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
