@@ -14,7 +14,7 @@
     {
       "binding": "DB",
       "database_name": "synthetix-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "e5bc9cba-e028-419b-9b81-96ff04597d0c",
       "migrations_dir": "migrations"
     }
   ],
