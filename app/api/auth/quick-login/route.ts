@@ -17,14 +17,24 @@ export async function POST(req: NextRequest) {
     const email = validated.email.trim().toLowerCase();
     const username = (validated.username || email.split('@')[0]).trim();
     const customId = `user-${Math.abs(hashString(email))}`;
-    
-    // Strict RBAC: All portal registrations default to 'client'. Only admin discord IDs get 'admin'
-    const role: UserRole = isUserAdmin(customId) ? 'admin' : 'client';
+
+    // 1. Verificar si el usuario ya existe en D1 para no perder su rol
+    const existingUser = await dbService.getUserById(customId);
+
+    // 2. Asignar rol: Preserva el de D1 o evalúa si el email/ID es admin
+    let role: UserRole = 'client';
+    if (existingUser && existingUser.role) {
+      role = existingUser.role as UserRole;
+    } else if (isUserAdmin(email) || isUserAdmin(customId)) {
+      role = 'admin';
+    }
+
+    const userId = existingUser?.id || customId;
 
     const user = await dbService.upsertUser({
-      id: customId,
-      username,
-      global_name: username,
+      id: userId,
+      username: existingUser?.username || username,
+      global_name: existingUser?.global_name || username,
       email,
       role,
     });
