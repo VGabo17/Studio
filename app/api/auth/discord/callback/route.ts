@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbService } from '@/lib/db';
 import { COOKIE_NAME, createSessionToken, isUserAdmin } from '@/lib/auth';
+import { UserRole } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   const redirectUri = process.env.DISCORD_REDIRECT_URI || `${req.nextUrl.origin}/api/auth/discord/callback`;
 
   try {
-    // 1. Intercambio de code por access_token con la API de Discord
+    // 1. Intercambio de code por access_token
     const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: {
@@ -40,11 +41,9 @@ export async function GET(req: NextRequest) {
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token;
 
-    // 2. Obtener perfil del usuario desde Discord API
+    // 2. Obtener perfil de Discord
     const userRes = await fetch('https://discord.com/api/users/@me', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
 
     if (!userRes.ok) {
@@ -53,14 +52,15 @@ export async function GET(req: NextRequest) {
 
     const discordUser = await userRes.json();
 
-    // 3. Obtener el usuario actual en D1 (si existe) para no perder el rol manual
+    // 3. Obtener usuario existente y determinar rol de forma estrictamente tipada
     const existingUser = await dbService.getUserById(discordUser.id);
 
-    let userRole = 'client';
-    if (isUserAdmin(discordUser.id)) {
+    let userRole: UserRole = 'client';
+
+    if (isUserAdmin(discordUser.id) || (discordUser.email && isUserAdmin(discordUser.email))) {
       userRole = 'admin';
-    } else if (existingUser && existingUser.role) {
-      userRole = existingUser.role; // Preserva 'admin', 'developer_senior', etc.
+    } else if (existingUser?.role) {
+      userRole = existingUser.role as UserRole;
     }
 
     const dbUser = await dbService.upsertUser({
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 días
+      maxAge: 60 * 60 * 24 * 7,
     });
 
     return response;
