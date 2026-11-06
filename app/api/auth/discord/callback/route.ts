@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const redirectUri = process.env.DISCORD_REDIRECT_URI || `${req.nextUrl.origin}/api/auth/discord/callback`;
 
   try {
-    // 1. Intercambio de code por access_token
+    // 1. Intercambio de code por access_token con la API de Discord
     const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: {
@@ -41,9 +41,11 @@ export async function GET(req: NextRequest) {
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token;
 
-    // 2. Obtener perfil de Discord
+    // 2. Obtener perfil del usuario desde Discord API
     const userRes = await fetch('https://discord.com/api/users/@me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     });
 
     if (!userRes.ok) {
@@ -52,7 +54,7 @@ export async function GET(req: NextRequest) {
 
     const discordUser = await userRes.json();
 
-    // 3. Obtener usuario existente y determinar rol de forma estrictamente tipada
+    // 3. Obtener el usuario actual en D1 (si existe) para no perder el rol manual
     const existingUser = await dbService.getUserById(discordUser.id);
 
     let userRole: UserRole = 'client';
@@ -69,7 +71,7 @@ export async function GET(req: NextRequest) {
       global_name: discordUser.global_name || discordUser.username,
       avatar: discordUser.avatar,
       email: discordUser.email || null,
-      role: userRole,
+      role: userRole as UserRole, // <-- Casting explícito para forzar el tipo en TypeScript
     });
 
     // 4. Crear JWT seguro para la cookie de sesión
@@ -83,7 +85,7 @@ export async function GET(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 7, // 7 días
     });
 
     return response;
