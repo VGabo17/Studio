@@ -53,15 +53,23 @@ export async function GET(req: NextRequest) {
 
     const discordUser = await userRes.json();
 
-    // 3. Crear o actualizar usuario en la base de datos (Cloudflare D1)
-    const isAdmin = isUserAdmin(discordUser.id);
+    // 3. Obtener el usuario actual en D1 (si existe) para no perder el rol manual
+    const existingUser = await dbService.getUserById(discordUser.id);
+
+    let userRole = 'client';
+    if (isUserAdmin(discordUser.id)) {
+      userRole = 'admin';
+    } else if (existingUser && existingUser.role) {
+      userRole = existingUser.role; // Preserva 'admin', 'developer_senior', etc.
+    }
+
     const dbUser = await dbService.upsertUser({
       id: discordUser.id,
       username: discordUser.username,
       global_name: discordUser.global_name || discordUser.username,
       avatar: discordUser.avatar,
       email: discordUser.email || null,
-      role: isAdmin ? 'admin' : 'client',
+      role: userRole,
     });
 
     // 4. Crear JWT seguro para la cookie de sesión
