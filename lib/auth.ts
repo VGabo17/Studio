@@ -1,17 +1,17 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { JWTPayload, User, UserRole } from './types';
+import { isUserAdmin } from './permissions';
+
+export * from './permissions';
 
 const DEFAULT_SECRET = 'synthetix_cyber_lilac_secret_key_prod_2026_jwt_rbac';
 const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || DEFAULT_SECRET);
 
 export const COOKIE_NAME = 'synthetix_session';
 
-import { isUserAdmin } from './permissions';
-export * from './permissions';
-
 /**
- * Signs a JWT session token valid for 7 days
+ * Genera un token JWT de sesión válido por 7 días
  */
 export async function createSessionToken(user: {
   id: string;
@@ -21,8 +21,10 @@ export async function createSessionToken(user: {
   email: string | null;
   role: UserRole;
 }): Promise<string> {
+  // 1. Preservar el rol asignado en la BD, o forzar 'admin' si el ID o Email están en la lista VIP
   let role: UserRole = user.role;
-  if (isUserAdmin(user.id)) {
+  
+  if (isUserAdmin(user.id) || (user.email && isUserAdmin(user.email))) {
     role = 'admin';
   }
 
@@ -41,7 +43,7 @@ export async function createSessionToken(user: {
 }
 
 /**
- * Verifies a JWT session token
+ * Verifica y decodifica el token de sesión JWT
  */
 export async function verifySessionToken(token: string): Promise<JWTPayload | null> {
   try {
@@ -60,7 +62,7 @@ export async function verifySessionToken(token: string): Promise<JWTPayload | nu
 }
 
 /**
- * Retrieves the current user from cookies
+ * Obtiene el usuario autenticado desde las cookies de Next.js
  */
 export async function getCurrentUser(): Promise<User | null> {
   const cookieStore = await cookies();
