@@ -85,16 +85,57 @@ export async function sendDiscordNotification(
         { name: '⚡ Descargar Build', value: `[Descargar desde el Portal](${projectLink})`, inline: false }
       );
       break;
+
+    case 'PAYMENT_CONFIRMED':
+      embedTitle = '💰 ¡Pago Confirmado & Verificado — Synthetix Studio!';
+      embedDescription = `Se ha registrado exitosamente un pago para el proyecto **${payload.projectTitle}** (\`${payload.projectId}\`).`;
+      fields.push(
+        { name: '💵 Monto Abonado', value: `**$${(payload.amount ?? payload.price ?? 0).toFixed(2)} USD**`, inline: true },
+        { name: '💳 Pasarela de Pago', value: payload.paymentMethod ? payload.paymentMethod.toUpperCase() : 'STRIPE / PAYPAL', inline: true },
+        { name: '🧾 N° Transacción', value: `\`${payload.transactionId || 'TXN-SYNTH-OK'}\``, inline: false },
+        { name: '👤 Cliente', value: payload.clientName || 'Cliente Gamer', inline: true },
+        { name: '🔓 Estado de Descargas', value: '✅ **Bóveda .jar Desbloqueada sin restricciones**', inline: true },
+        { name: '🔗 Ver Recibo & Proyecto', value: `[Acceder al Proyecto](${projectLink})`, inline: false }
+      );
+      break;
+
+    case 'CHAT_MESSAGE':
+      embedTitle = '💬 Nuevo Mensaje en el Hilo del Proyecto';
+      embedDescription = `Hay una nueva respuesta técnica en el proyecto **${payload.projectTitle}** (\`${payload.projectId}\`).`;
+      fields.push(
+        { name: '👤 Remitente', value: payload.authorName || payload.clientName || 'Usuario', inline: true },
+        { name: '🕒 Momento', value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true },
+        { name: '💬 Mensaje', value: payload.chatMessage || 'Nuevo mensaje recibido en el chat.', inline: false },
+        { name: '⚡ Responder al Chat', value: `[Abrir Chat en Directo](${projectLink})`, inline: false }
+      );
+      break;
+
+    case 'DISCORD_DM_ALERT':
+      embedTitle = '🔔 Alerta Directa de Synthetix Studio';
+      embedDescription = payload.description || 'Notificación sobre el estado de tu pedido o build.';
+      fields.push(
+        { name: '🆔 Proyecto', value: `\`${payload.projectId}\``, inline: true },
+        { name: '🔗 Acceso Inmediato', value: `[Ir a Synthetix Studio](${projectLink})`, inline: false }
+      );
+      break;
+  }
+
+  // Color personalizado según el evento
+  let embedColor = LILAC_EMBED_COLOR;
+  if (type === 'PAYMENT_CONFIRMED') {
+    embedColor = 0x10B981; // Verde esmeralda para pagos
+  } else if (type === 'NEW_DELIVERY') {
+    embedColor = 0xA855F7; // Púrpura neón intenso
   }
 
   const embed = {
     title: embedTitle,
     description: embedDescription,
-    color: LILAC_EMBED_COLOR, // 0xC084FC (12616956)
+    color: embedColor,
     fields,
     footer: {
-      text: 'Synthetix Studio • Sistema Automatizado de Notificaciones',
-      icon_url: 'https://cdn.discordapp.com/embed/avatars/0.png',
+      text: 'Synthetix Studio • Sistema Automatizado de Pagos & Notificaciones',
+      icon_url: 'https://cdn.discordapp.com/embed/avatars/4.png',
     },
     timestamp: new Date().toISOString(),
   };
@@ -109,7 +150,16 @@ export async function sendDiscordNotification(
     delivered: false,
   };
 
-  if (!webhookUrl || webhookUrl.includes('your_webhook_id')) {
+  // Despacho a webhook del estudio y opcionalmente al webhook privado del cliente
+  const targetWebhooks: string[] = [];
+  if (webhookUrl && !webhookUrl.includes('your_webhook_id')) {
+    targetWebhooks.push(webhookUrl);
+  }
+  if (payload.customWebhookUrl && payload.customWebhookUrl.startsWith('https://discord.com/api/webhooks/')) {
+    targetWebhooks.push(payload.customWebhookUrl);
+  }
+
+  if (targetWebhooks.length === 0) {
     // Modo simulación registrado para la UI en vivo
     logEntry.delivered = true;
     globalWebhookLogs.push(logEntry);
@@ -117,25 +167,25 @@ export async function sendDiscordNotification(
   }
 
   try {
-    const res = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: 'Synthetix Studio Bot',
-        avatar_url: 'https://cdn.discordapp.com/embed/avatars/4.png',
-        embeds: [embed],
-      }),
-    });
+    const promises = targetWebhooks.map((url) =>
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: 'Synthetix Studio Bot',
+          avatar_url: 'https://cdn.discordapp.com/embed/avatars/4.png',
+          embeds: [embed],
+        }),
+      })
+    );
 
-    if (!res.ok) {
-      logEntry.delivered = false;
-      globalWebhookLogs.push(logEntry);
-      return { success: false, error: `Discord Webhook returned status ${res.status}` };
-    }
+    const responses = await Promise.all(promises);
+    const anySuccess = responses.some((r) => r.ok);
 
-    logEntry.delivered = true;
+    logEntry.delivered = anySuccess;
     globalWebhookLogs.push(logEntry);
-    return { success: true };
+
+    return { success: anySuccess };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     logEntry.delivered = false;

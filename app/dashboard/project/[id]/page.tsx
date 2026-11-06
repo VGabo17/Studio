@@ -4,6 +4,12 @@ import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { DashboardSidebar } from '@/components/DashboardSidebar';
+import { AccountSettingsModal } from '@/components/AccountSettingsModal';
+import { SupportModal } from '@/components/SupportModal';
+import { NewProjectModal } from '@/components/NewProjectModal';
+import { GamerCheckoutModal } from '@/components/GamerCheckoutModal';
+import { DiscordNotificationSettingsModal } from '@/components/DiscordNotificationSettingsModal';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { ProjectProgressBar } from '@/components/ProjectProgressBar';
@@ -28,10 +34,16 @@ import {
   Loader2,
   AlertCircle,
   Lock,
+  Unlock,
   Edit3,
   Check,
   X,
   DollarSign,
+  CreditCard,
+  CheckCircle2,
+  Bell,
+  Receipt,
+  Sparkles,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
@@ -94,6 +106,11 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [uploaderOpen, setUploaderOpen] = useState(false);
   const [auditModalOpen, setAuditModalOpen] = useState(false);
+  const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [discordSettingsModalOpen, setDiscordSettingsModalOpen] = useState(false);
 
   // Edición directa de tarifa acordada para administradores
   const [editingPrice, setEditingPrice] = useState(false);
@@ -187,15 +204,6 @@ export default function ProjectDetailPage({ params }: PageProps) {
     router.push('/');
   };
 
-  const handleSwitchPersona = async (role: UserRole) => {
-    await fetch('/api/auth/quick-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ persona: role }),
-    });
-    fetchProjectData();
-  };
-
   const formatFileSize = (bytes: number): string => {
     if (bytes >= 1024 * 1024) {
       return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
@@ -242,10 +250,18 @@ export default function ProjectDetailPage({ params }: PageProps) {
         user={user}
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
-        onSwitchPersona={handleSwitchPersona}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 flex flex-col md:flex-row w-full min-h-[calc(100vh-4.5rem)]">
+        <DashboardSidebar
+          user={user}
+          onOpenNewProject={() => setNewProjectModalOpen(true)}
+          onOpenSettings={() => setSettingsModalOpen(true)}
+          onOpenSupport={() => setSupportModalOpen(true)}
+          onLogout={handleLogout}
+        />
+
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 min-w-0">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between mb-6">
           <Link
@@ -257,11 +273,24 @@ export default function ProjectDetailPage({ params }: PageProps) {
           </Link>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setDiscordSettingsModalOpen(true)}
+              className={`text-xs px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 font-semibold ${
+                project.client_discord_webhook
+                  ? 'bg-[#5865F2]/20 border-[#5865F2]/60 text-purple-200 shadow-[0_0_12px_rgba(88,101,242,0.25)]'
+                  : 'bg-[#120A21] border-[#261442] hover:border-[#5865F2]/50 text-purple-300 hover:text-white'
+              }`}
+              title="Configurar notificaciones en tu servidor de Discord"
+            >
+              <Bell className="w-3.5 h-3.5 text-[#5865F2]" />
+              <span>{project.client_discord_webhook ? 'Discord Vinculado' : 'Alertas Discord'}</span>
+            </button>
+
+            <button
               onClick={() => setAuditModalOpen(true)}
-              className="text-xs text-purple-300/70 hover:text-[#C084FC] transition-colors flex items-center gap-1 font-mono"
+              className="text-xs px-2.5 py-1.5 rounded-xl bg-[#120A21] border border-[#261442] text-purple-300/80 hover:text-[#C084FC] hover:border-[#C084FC]/50 transition-colors flex items-center gap-1 font-mono"
             >
               <Send className="w-3 h-3 text-[#C084FC]" />
-              Webhooks Discord
+              <span className="hidden sm:inline">Webhooks</span>
             </button>
           </div>
         </div>
@@ -383,9 +412,94 @@ export default function ProjectDetailPage({ params }: PageProps) {
         </div>
 
         {/* Live Progress Bar Milestone Component */}
-        <div className="mb-10">
+        <div className="mb-8">
           <ProjectProgressBar progress={project.progress} status={project.status} />
         </div>
+
+        {/* Pasarela de Pago Gamer & Estado Financiero del Proyecto */}
+        {project.price && project.price > 0 && (
+          <div className="mb-8 p-6 rounded-2xl bg-[#120A21] border border-[#261442] shadow-[0_0_25px_rgba(192,132,252,0.12)]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                    project.payment_status === 'fully_paid'
+                      ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-400'
+                      : project.payment_status === 'deposit_paid'
+                      ? 'bg-blue-950/80 border border-blue-500/50 text-cyan-400'
+                      : 'bg-amber-950/80 border border-amber-500/50 text-amber-400'
+                  }`}
+                >
+                  {project.payment_status === 'fully_paid' ? (
+                    <CheckCircle2 className="w-6 h-6" />
+                  ) : (
+                    <CreditCard className="w-6 h-6" />
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-sm font-bold text-white">
+                      {project.payment_status === 'fully_paid'
+                        ? 'Proyecto 100% Liquidado & Verificado'
+                        : project.payment_status === 'deposit_paid'
+                        ? 'Anticipo del 50% Registrado'
+                        : 'Pago del Proyecto Pendiente'}
+                    </span>
+                    <span
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold ${
+                        project.payment_status === 'fully_paid'
+                          ? 'bg-emerald-950 text-emerald-400 border-emerald-500/40'
+                          : project.payment_status === 'deposit_paid'
+                          ? 'bg-blue-950 text-cyan-400 border-blue-500/40'
+                          : 'bg-amber-950 text-amber-400 border-amber-500/40'
+                      }`}
+                    >
+                      {project.payment_status === 'fully_paid'
+                        ? 'DESCARGAS DESBLOQUEADAS'
+                        : project.payment_status === 'deposit_paid'
+                        ? 'SPRINT ACTIVO'
+                        : 'COTIZACIÓN DISPONIBLE'}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-purple-300/70 leading-relaxed max-w-2xl">
+                    {project.payment_status === 'fully_paid'
+                      ? `Transacción ${project.transaction_id || 'TXN-SYNTH-VERIFIED'} confirmada mediante ${project.payment_method?.toUpperCase() || 'STRIPE'}. Todas las compilaciones .jar y configuraciones .zip están habilitadas sin restricción.`
+                      : project.payment_status === 'deposit_paid'
+                      ? `Has abonado $${(project.paid_amount || 0).toFixed(2)} USD (50%). Liquida el saldo restante de $${Math.max(0, project.price - (project.paid_amount || 0)).toFixed(2)} USD para desbloquear la descarga del .jar final.`
+                      : `Tarifa acordada: $${project.price} USD. Puedes pagar el 50% de anticipo para iniciar el sprint o abonar el 100% para desbloqueo automático instantáneo.`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Botón de Checkout Autónomo */}
+              <div className="shrink-0 flex items-center gap-2.5">
+                {project.payment_status !== 'fully_paid' ? (
+                  <button
+                    onClick={() => setCheckoutModalOpen(true)}
+                    className="px-5 py-2.5 bg-gradient-to-r from-[#9333EA] to-[#C084FC] hover:from-[#A855F7] hover:to-[#D8B4FE] text-white font-bold text-xs rounded-xl shadow-[0_0_20px_rgba(192,132,252,0.35)] transition-all flex items-center gap-2 active:scale-95"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>
+                      {project.payment_status === 'deposit_paid'
+                        ? 'Liquidar Saldo Restante (50%)'
+                        : 'Pagar Proyecto / Anticipo'}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setCheckoutModalOpen(true)}
+                    className="px-4 py-2 bg-[#08050E] border border-emerald-500/40 hover:bg-[#180d2c] text-emerald-300 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5"
+                  >
+                    <Receipt className="w-3.5 h-3.5" />
+                    <span>Ver Recibo & Pasarelas</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 2-Column Split: Builds Downloads + Realtime Chat */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -453,14 +567,25 @@ export default function ProjectDetailPage({ params }: PageProps) {
                     </div>
 
                     <div className="shrink-0">
-                      <a
-                        href={`/api/deliveries/download/${delivery.id}`}
-                        download
-                        className="px-4 py-2.5 bg-gradient-to-r from-[#9333EA] to-[#C084FC] hover:from-[#A855F7] hover:to-[#D8B4FE] text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(192,132,252,0.3)] transition-all flex items-center justify-center gap-2 active:scale-95"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Descargar Build</span>
-                      </a>
+                      {project.payment_status === 'fully_paid' || (user && isStaff(user.role)) ? (
+                        <a
+                          href={`/api/deliveries/download/${delivery.id}`}
+                          download
+                          className="px-4 py-2.5 bg-gradient-to-r from-[#9333EA] to-[#C084FC] hover:from-[#A855F7] hover:to-[#D8B4FE] text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(192,132,252,0.3)] transition-all flex items-center justify-center gap-2 active:scale-95"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Descargar Build</span>
+                        </a>
+                      ) : (
+                        <button
+                          onClick={() => setCheckoutModalOpen(true)}
+                          className="px-4 py-2.5 bg-amber-950/40 border border-amber-500/40 hover:bg-amber-900/40 text-amber-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.15)]"
+                          title="Se requiere liquidar el proyecto para descargar los binarios compilados"
+                        >
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>Descarga Protegida (Liquidar)</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -492,6 +617,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
           </div>
         </div>
       </main>
+      </div>
 
       <Footer />
 
@@ -510,6 +636,40 @@ export default function ProjectDetailPage({ params }: PageProps) {
       <DiscordEmbedAuditModal
         isOpen={auditModalOpen}
         onClose={() => setAuditModalOpen(false)}
+      />
+      <AccountSettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        user={user}
+        onUserUpdated={(updatedUser) => setUser(updatedUser)}
+      />
+      <SupportModal
+        isOpen={supportModalOpen}
+        onClose={() => setSupportModalOpen(false)}
+        user={user}
+      />
+      <NewProjectModal
+        isOpen={newProjectModalOpen}
+        onClose={() => setNewProjectModalOpen(false)}
+        onSuccess={(newId) => {
+          router.push(`/dashboard/project/${newId}`);
+        }}
+      />
+      <GamerCheckoutModal
+        isOpen={checkoutModalOpen}
+        onClose={() => setCheckoutModalOpen(false)}
+        project={project}
+        onPaymentSuccess={(updated) => {
+          setProject(updated);
+        }}
+      />
+      <DiscordNotificationSettingsModal
+        isOpen={discordSettingsModalOpen}
+        onClose={() => setDiscordSettingsModalOpen(false)}
+        project={project}
+        onProjectUpdated={(updated) => {
+          setProject(updated);
+        }}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, isStaff } from '@/lib/auth';
 import { dbService } from '@/lib/db';
+import { sendDiscordNotification } from '@/lib/discord-webhook';
 import { z } from 'zod';
 
 const postMessageSchema = z.object({
@@ -55,6 +56,16 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const validated = postMessageSchema.parse(body);
 
     const message = await dbService.addChatMessage(id, user.id, validated.message);
+
+    // Despacho de notificación Discord en tiempo real
+    await sendDiscordNotification('CHAT_MESSAGE', {
+      projectId: project.id,
+      projectTitle: project.title,
+      clientName: user.global_name || user.username,
+      authorName: user.global_name || user.username,
+      chatMessage: validated.message,
+      customWebhookUrl: project.client_discord_webhook || undefined,
+    });
 
     return NextResponse.json({ success: true, message }, { status: 201 });
   } catch (err: unknown) {

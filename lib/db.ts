@@ -1,5 +1,8 @@
 import {
+  AuditLog,
+  AuditLogAction,
   Delivery,
+  PaymentConfig,
   Project,
   ProjectComment,
   ProjectChatMessage,
@@ -20,6 +23,8 @@ interface DatabaseState {
   chatMessages: Map<string, ProjectChatMessage>;
   chatSubscribers: Map<string, Set<(msg: ProjectChatMessage) => void>>;
   serviceRates: Map<ServiceType, ServiceRate>;
+  auditLogs: Map<string, AuditLog>;
+  paymentConfig: PaymentConfig;
 }
 
 declare global {
@@ -38,6 +43,7 @@ function initDb(): DatabaseState {
   const chatMessages = new Map<string, ProjectChatMessage>();
   const chatSubscribers = new Map<string, Set<(msg: ProjectChatMessage) => void>>();
   const serviceRates = new Map<ServiceType, ServiceRate>();
+  const auditLogs = new Map<string, AuditLog>();
 
   // 0. TARIFAS Y PRECIOS BASE DE SERVICIOS
   const defaultRates: ServiceRate[] = [
@@ -169,6 +175,11 @@ function initDb(): DatabaseState {
     status: 'completed',
     progress: 100,
     price: 45,
+    payment_status: 'fully_paid',
+    paid_amount: 45,
+    payment_method: 'stripe',
+    transaction_id: 'TXN-SYNTH-92810',
+    paid_at: '2026-01-20T15:30:00Z',
     created_at: '2026-01-20T14:00:00Z',
     updated_at: '2026-02-02T19:00:00Z',
   };
@@ -185,6 +196,11 @@ function initDb(): DatabaseState {
     status: 'completed',
     progress: 100,
     price: 60,
+    payment_status: 'fully_paid',
+    paid_amount: 60,
+    payment_method: 'paypal',
+    transaction_id: 'TXN-SYNTH-73912',
+    paid_at: '2026-01-25T12:00:00Z',
     created_at: '2026-01-25T11:30:00Z',
     updated_at: '2026-02-10T16:20:00Z',
   };
@@ -201,6 +217,11 @@ function initDb(): DatabaseState {
     status: 'completed',
     progress: 100,
     price: 180,
+    payment_status: 'fully_paid',
+    paid_amount: 180,
+    payment_method: 'crypto',
+    transaction_id: 'TXN-SYNTH-84910',
+    paid_at: '2026-02-01T10:00:00Z',
     created_at: '2026-02-01T09:00:00Z',
     updated_at: '2026-02-25T18:00:00Z',
   };
@@ -217,6 +238,12 @@ function initDb(): DatabaseState {
     status: 'in_development',
     progress: 65,
     price: 35,
+    payment_status: 'deposit_paid',
+    deposit_amount: 17.5,
+    paid_amount: 17.5,
+    payment_method: 'stripe',
+    transaction_id: 'TXN-SYNTH-55102',
+    paid_at: '2026-03-01T11:00:00Z',
     created_at: '2026-03-01T10:00:00Z',
     updated_at: '2026-03-04T12:00:00Z',
   };
@@ -287,6 +314,124 @@ function initDb(): DatabaseState {
   };
   chatMessages.set(msg3.id, msg3);
 
+  // 4. LOGS DE AUDITORÍA INICIALES (ACCIONES DE STAFF)
+  const initialLogs: AuditLog[] = [
+    {
+      id: 'audit-log-1',
+      user_id: juniorDev.id,
+      action: 'PROGRESS_UPDATE',
+      project_id: prjBot.id,
+      project_title: prjBot.title,
+      details: 'Actualizó el progreso de desarrollo a 65% (comandos slash y sincronización)',
+      metadata: { previousProgress: 40, newProgress: 65 },
+      created_at: '2026-03-04T12:00:00Z',
+    },
+    {
+      id: 'audit-log-2',
+      user_id: seniorDev.id,
+      action: 'DELIVERY_UPLOAD',
+      project_id: prjRewards.id,
+      project_title: prjRewards.title,
+      details: 'Subió compilación final isrewards-v1.4.2-RELEASE.jar (1.8 MB) y publicó changelog',
+      metadata: { version: 'v1.4.2-RELEASE', fileName: 'isrewards-v1.4.2-RELEASE.jar', size: 1887436 },
+      created_at: '2026-02-02T18:45:00Z',
+    },
+    {
+      id: 'audit-log-3',
+      user_id: seniorDev.id,
+      action: 'STATUS_CHANGE',
+      project_id: prjRewards.id,
+      project_title: prjRewards.title,
+      details: 'Aprobó y cambió el estado del proyecto de "testing" a "completed" con entrega verificada',
+      metadata: { previousStatus: 'testing', newStatus: 'completed', progress: 100 },
+      created_at: '2026-02-02T19:00:00Z',
+    },
+    {
+      id: 'audit-log-4',
+      user_id: adminUser.id,
+      action: 'RATE_UPDATE',
+      project_id: null,
+      project_title: null,
+      details: 'Actualizó la tarifa base oficial del servicio "Pack Completo Network" a $80 USD',
+      metadata: { service_type: 'full_pack', base_price: 80, delivery_time: '5-10 días' },
+      created_at: '2026-02-15T09:30:00Z',
+    },
+    {
+      id: 'audit-log-5',
+      user_id: seniorDev.id,
+      action: 'DELIVERY_UPLOAD',
+      project_id: prjSecurity.id,
+      project_title: prjSecurity.title,
+      details: 'Subió build protegida issecurity-v2.1.0-RELEASE.jar (2.4 MB) a Cloudflare R2',
+      metadata: { version: 'v2.1.0-RELEASE', fileName: 'issecurity-v2.1.0-RELEASE.jar', size: 2516582 },
+      created_at: '2026-02-10T16:00:00Z',
+    },
+    {
+      id: 'audit-log-6',
+      user_id: supportUser.id,
+      action: 'PROJECT_ASSIGNMENT',
+      project_id: prjBot.id,
+      project_title: prjBot.title,
+      details: 'Asignó el ticket de desarrollo a LeoDev (Junior Developer) tras validación técnica',
+      metadata: { assigned_to: juniorDev.id, previousAssignee: null },
+      created_at: '2026-03-01T10:15:00Z',
+    },
+    {
+      id: 'audit-log-7',
+      user_id: adminUser.id,
+      action: 'PRICE_UPDATE',
+      project_id: prjNixer.id,
+      project_title: prjNixer.title,
+      details: 'Fijó la cotización oficial de entrega llave en mano en $180 USD para Network completa',
+      metadata: { previousPrice: null, newPrice: 180 },
+      created_at: '2026-02-01T09:30:00Z',
+    },
+    {
+      id: 'audit-log-8',
+      user_id: seniorDev.id,
+      action: 'STATUS_CHANGE',
+      project_id: prjSecurity.id,
+      project_title: prjSecurity.title,
+      details: 'Avanzó el proyecto a "testing" (90% progreso) tras auditoría de inyecciones de paquetes NMS',
+      metadata: { previousStatus: 'in_development', newStatus: 'testing', progress: 90 },
+      created_at: '2026-02-05T14:20:00Z',
+    },
+    {
+      id: 'audit-log-9',
+      user_id: adminUser.id,
+      action: 'PROJECT_CREATE',
+      project_id: prjNixer.id,
+      project_title: prjNixer.title,
+      details: 'Registró nuevo pedido en el sistema para Phoenix Network (Setup MC & Velocity)',
+      metadata: { service_type: 'setup_mc', client_id: clientUser.id },
+      created_at: '2026-02-01T09:00:00Z',
+    },
+    {
+      id: 'audit-log-10',
+      user_id: juniorDev.id,
+      action: 'PROGRESS_UPDATE',
+      project_id: prjBot.id,
+      project_title: prjBot.title,
+      details: 'Configuró comandos interactivos slash y elevó el progreso de 20% a 40%',
+      metadata: { previousProgress: 20, newProgress: 40 },
+      created_at: '2026-03-02T16:40:00Z',
+    },
+  ];
+
+  initialLogs.forEach((log) => {
+    auditLogs.set(log.id, log);
+  });
+
+  const paymentConfig: PaymentConfig = {
+    paypal_url: process.env.PAYPAL_PAYMENT_URL || 'https://paypal.me/SynthetixStudio',
+    stripe_payment_link: process.env.STRIPE_PAYMENT_LINK || 'https://buy.stripe.com/test_synthetix_checkout',
+    tebex_store_url: process.env.TEBEX_STORE_URL || 'https://synthetixstudio.tebex.io',
+    crypto_wallet_usdt: process.env.CRYPTO_WALLET_USDT || 'TFk8eN2Kq7Vw9k8Lm3y7Jz1Xp5Q8d2Z4W1 (USDT TRC20)',
+    crypto_wallet_btc: process.env.CRYPTO_WALLET_BTC || 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+    bank_transfer_info: 'Transferencia Bancaria Internacional / Wise / Binance Pay (Disponible vía Ticket de Soporte)',
+    updated_at: new Date().toISOString(),
+  };
+
   const state: DatabaseState = {
     users,
     projects,
@@ -295,6 +440,8 @@ function initDb(): DatabaseState {
     chatMessages,
     chatSubscribers,
     serviceRates,
+    auditLogs,
+    paymentConfig,
   };
 
   global.__synthetix_db = state;
@@ -444,7 +591,24 @@ export const dbService = {
 
   async updateProject(
     id: string,
-    updates: Partial<Pick<Project, 'status' | 'progress' | 'price' | 'title' | 'description' | 'assigned_to'>>
+    updates: Partial<
+      Pick<
+        Project,
+        | 'status'
+        | 'progress'
+        | 'price'
+        | 'title'
+        | 'description'
+        | 'assigned_to'
+        | 'payment_status'
+        | 'paid_amount'
+        | 'deposit_amount'
+        | 'payment_method'
+        | 'transaction_id'
+        | 'paid_at'
+        | 'client_discord_webhook'
+      >
+    >
   ): Promise<Project | null> {
     const existing = db.projects.get(id);
     if (!existing) return null;
@@ -608,4 +772,107 @@ export const dbService = {
     db.serviceRates.set(serviceType, updated);
     return updated;
   },
+
+  // LOGS DE AUDITORÍA
+  attachAuditLogRelations(log: AuditLog): AuditLog {
+    const user = db.users.get(log.user_id);
+    return {
+      ...log,
+      user: user
+        ? {
+            username: user.username,
+            global_name: user.global_name,
+            avatar: user.avatar,
+            role: user.role,
+          }
+        : undefined,
+    };
+  },
+
+  async createAuditLog(data: {
+    user_id: string;
+    action: AuditLogAction;
+    project_id?: string | null;
+    project_title?: string | null;
+    details: string;
+    metadata?: Record<string, unknown>;
+    created_at?: string;
+  }): Promise<AuditLog> {
+    const id = `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const log: AuditLog = {
+      id,
+      user_id: data.user_id,
+      action: data.action,
+      project_id: data.project_id || null,
+      project_title: data.project_title || null,
+      details: data.details,
+      metadata: data.metadata,
+      created_at: data.created_at || new Date().toISOString(),
+    };
+    db.auditLogs.set(id, log);
+    return this.attachAuditLogRelations(log);
+  },
+
+  async getAuditLogs(options?: {
+    page?: number;
+    limit?: number;
+    action?: string;
+    search?: string;
+  }): Promise<{ logs: AuditLog[]; total: number; totalPages: number; currentPage: number }> {
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.max(1, Math.min(50, options?.limit || 6));
+    const actionFilter = options?.action && options.action !== 'ALL' ? options.action : null;
+    const search = options?.search ? options.search.toLowerCase().trim() : null;
+
+    let allLogs = Array.from(db.auditLogs.values()).map((l) => this.attachAuditLogRelations(l));
+
+    if (actionFilter) {
+      allLogs = allLogs.filter((l) => l.action === actionFilter);
+    }
+
+    if (search) {
+      allLogs = allLogs.filter((l) => {
+        const staffName = (l.user?.global_name || l.user?.username || '').toLowerCase();
+        const prjTitle = (l.project_title || '').toLowerCase();
+        const prjId = (l.project_id || '').toLowerCase();
+        const details = (l.details || '').toLowerCase();
+        return (
+          staffName.includes(search) ||
+          prjTitle.includes(search) ||
+          prjId.includes(search) ||
+          details.includes(search)
+        );
+      });
+    }
+
+    // Ordenar de más reciente a más antiguo
+    allLogs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    const total = allLogs.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const offset = (page - 1) * limit;
+    const paginatedLogs = allLogs.slice(offset, offset + limit);
+
+    return {
+      logs: paginatedLogs,
+      total,
+      totalPages,
+      currentPage: page,
+    };
+  },
+
+  // CONFIGURACIÓN DE PASARELAS DE PAGO
+  async getPaymentConfig(): Promise<PaymentConfig> {
+    return db.paymentConfig;
+  },
+
+  async updatePaymentConfig(updates: Partial<PaymentConfig>): Promise<PaymentConfig> {
+    db.paymentConfig = {
+      ...db.paymentConfig,
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    return db.paymentConfig;
+  },
 };
+

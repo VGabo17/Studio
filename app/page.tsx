@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -30,6 +31,7 @@ import {
 } from 'lucide-react';
 
 export default function HomePage() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [rates, setRates] = useState<ServiceRate[]>([]);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -99,15 +101,6 @@ export default function HomePage() {
     setUser(null);
   };
 
-  const handleSwitchPersona = async (role: UserRole) => {
-    await fetch('/api/auth/quick-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ persona: role }),
-    });
-    fetchSession();
-  };
-
   // TRABAJOS REALES Y VERIFICADOS DE SYNTHETIX STUDIO
   const realWorks = [
     {
@@ -155,7 +148,13 @@ export default function HomePage() {
         user={user}
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
-        onSwitchPersona={handleSwitchPersona}
+        onOpenNewProject={() => {
+          if (user) {
+            router.push('/dashboard');
+          } else {
+            setAuthModalOpen(true);
+          }
+        }}
       />
 
       <main className="flex-1">

@@ -30,6 +30,9 @@ export interface User {
   created_at: string;
 }
 
+export type PaymentStatus = 'unpaid' | 'deposit_paid' | 'fully_paid';
+export type PaymentGateway = 'stripe' | 'paypal' | 'tebex' | 'crypto';
+
 export interface Project {
   id: string; // 'PRJ-XXXX'
   client_id: string;
@@ -40,6 +43,13 @@ export interface Project {
   status: ProjectStatus;
   progress: number; // 0 - 100
   price: number | null; // in USD
+  payment_status?: PaymentStatus;
+  paid_amount?: number;
+  deposit_amount?: number | null;
+  payment_method?: PaymentGateway | null;
+  transaction_id?: string | null;
+  paid_at?: string | null;
+  client_discord_webhook?: string | null;
   created_at: string;
   updated_at: string;
   client?: {
@@ -102,7 +112,13 @@ export interface JWTPayload {
   exp?: number;
 }
 
-export type WebhookNotificationType = 'NEW_ORDER' | 'STATUS_CHANGED' | 'NEW_DELIVERY' | 'CHAT_MESSAGE';
+export type WebhookNotificationType =
+  | 'NEW_ORDER'
+  | 'STATUS_CHANGED'
+  | 'NEW_DELIVERY'
+  | 'CHAT_MESSAGE'
+  | 'PAYMENT_CONFIRMED'
+  | 'DISCORD_DM_ALERT';
 
 export interface WebhookNotificationPayload {
   projectId: string;
@@ -117,5 +133,48 @@ export interface WebhookNotificationPayload {
   fileName?: string;
   changelog?: string;
   price?: number;
+  amount?: number;
+  paymentMethod?: string;
+  transactionId?: string;
   description?: string;
+  authorName?: string;
+  chatMessage?: string;
+  customWebhookUrl?: string;
 }
+
+export type AuditLogAction =
+  | 'STATUS_CHANGE'
+  | 'DELIVERY_UPLOAD'
+  | 'PRICE_UPDATE'
+  | 'PROGRESS_UPDATE'
+  | 'RATE_UPDATE'
+  | 'PROJECT_ASSIGNMENT'
+  | 'PROJECT_CREATE';
+
+export interface AuditLog {
+  id: string;
+  user_id: string;
+  action: AuditLogAction;
+  project_id?: string | null;
+  project_title?: string | null;
+  details: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  user?: {
+    username: string;
+    global_name: string | null;
+    avatar: string | null;
+    role: UserRole;
+  };
+}
+
+export interface PaymentConfig {
+  paypal_url: string;
+  stripe_payment_link: string;
+  tebex_store_url: string;
+  crypto_wallet_usdt: string;
+  crypto_wallet_btc: string;
+  bank_transfer_info: string;
+  updated_at: string;
+}
+

@@ -4,10 +4,17 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
+import { DashboardSidebar } from '@/components/DashboardSidebar';
+import { AccountSettingsModal } from '@/components/AccountSettingsModal';
+import { SupportModal } from '@/components/SupportModal';
+import { NewProjectModal } from '@/components/NewProjectModal';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { DeliveryUploaderModal } from '@/components/DeliveryUploaderModal';
 import { DiscordEmbedAuditModal } from '@/components/DiscordEmbedAuditModal';
+import { AdminStatsSection } from '@/components/AdminStatsSection';
+import { AdminAuditLogsSection } from '@/components/AdminAuditLogsSection';
+import { PaymentSettingsModal } from '@/components/PaymentSettingsModal';
 import { Project, ProjectStatus, ServiceRate, User, UserRole } from '@/lib/types';
 import {
   isStaff,
@@ -21,6 +28,7 @@ import {
   UploadCloud,
   Sliders,
   DollarSign,
+  CreditCard,
   Sparkles,
   Clock,
   CheckCircle2,
@@ -86,6 +94,10 @@ export default function AdminPage() {
   const [selectedProjectIdForUpload, setSelectedProjectIdForUpload] = useState<string | undefined>();
   const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [ratesModalOpen, setRatesModalOpen] = useState(false);
+  const [paymentSettingsModalOpen, setPaymentSettingsModalOpen] = useState(false);
+  const [newProjectModalOpen, setNewProjectModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
 
   // Modal de edición de proyecto
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -177,15 +189,6 @@ export default function AdminPage() {
     router.push('/');
   };
 
-  const handleSwitchPersona = async (role: UserRole) => {
-    await fetch('/api/auth/quick-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ persona: role }),
-    });
-    fetchAdminData();
-  };
-
   const handleOpenEdit = (project: Project) => {
     setEditingProject(project);
     setEditStatus(project.status);
@@ -274,10 +277,20 @@ export default function AdminPage() {
         user={user}
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
-        onSwitchPersona={handleSwitchPersona}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="flex-1 flex flex-col md:flex-row w-full min-h-[calc(100vh-4.5rem)]">
+        <DashboardSidebar
+          user={user}
+          projectsCount={projects.length}
+          onOpenNewProject={() => setNewProjectModalOpen(true)}
+          onOpenSettings={() => setSettingsModalOpen(true)}
+          onOpenSupport={() => setSupportModalOpen(true)}
+          onOpenPaymentSettings={() => setPaymentSettingsModalOpen(true)}
+          onLogout={handleLogout}
+        />
+
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 min-w-0">
         {!staffMember ? (
           <div className="p-12 rounded-3xl bg-[#120A21] border border-red-500/30 text-center max-w-lg mx-auto shadow-[0_0_35px_rgba(239,68,68,0.15)] my-12">
             <div className="w-14 h-14 rounded-full bg-red-950/60 border border-red-500/50 flex items-center justify-center text-red-400 mx-auto mb-4">
@@ -321,13 +334,21 @@ export default function AdminPage() {
               </div>
 
               <div className="flex items-center flex-wrap gap-3">
+                <button
+                  onClick={() => setPaymentSettingsModalOpen(true)}
+                  className="px-4 py-2.5 bg-purple-950/60 hover:bg-purple-900/60 text-[#C084FC] border border-[#C084FC]/40 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(192,132,252,0.2)]"
+                  title="Configurar enlaces de PayPal, Stripe, Tebex y wallets de criptomonedas"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-[#C084FC]" />
+                  Pasarelas & URLs de Pago
+                </button>
                 {canPrice && (
                   <button
                     onClick={() => setRatesModalOpen(true)}
                     className="px-4 py-2.5 bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-500/40 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
                   >
                     <DollarSign className="w-3.5 h-3.5 text-amber-400" />
-                    Editar Tarifas del Catálogo
+                    Tarifas del Catálogo
                   </button>
                 )}
                 <button
@@ -386,6 +407,9 @@ export default function AdminPage() {
                 <div className="text-[11px] text-purple-300/60 mt-1">5 niveles de privilegios</div>
               </div>
             </div>
+
+            {/* Recharts Analytics & Statistics Section */}
+            <AdminStatsSection projects={projects} />
 
             {/* Master Table of Studio Projects */}
             <div className="rounded-2xl bg-[#120A21] border border-[#261442] overflow-hidden shadow-xl">
@@ -490,6 +514,11 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Audit Logs Section with Paginated List & Filters */}
+            <div className="mt-10">
+              <AdminAuditLogsSection />
             </div>
 
             {/* Edit Project Modal */}
@@ -734,6 +763,7 @@ export default function AdminPage() {
           </div>
         )}
       </main>
+      </div>
 
       <Footer />
 
@@ -752,6 +782,29 @@ export default function AdminPage() {
       <DiscordEmbedAuditModal
         isOpen={auditModalOpen}
         onClose={() => setAuditModalOpen(false)}
+      />
+      <PaymentSettingsModal
+        isOpen={paymentSettingsModalOpen}
+        onClose={() => setPaymentSettingsModalOpen(false)}
+        canEdit={canPrice}
+      />
+      <AccountSettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        user={user}
+        onUserUpdated={(updatedUser) => setUser(updatedUser)}
+      />
+      <SupportModal
+        isOpen={supportModalOpen}
+        onClose={() => setSupportModalOpen(false)}
+        user={user}
+      />
+      <NewProjectModal
+        isOpen={newProjectModalOpen}
+        onClose={() => setNewProjectModalOpen(false)}
+        onSuccess={(id) => {
+          router.push(`/dashboard/project/${id}`);
+        }}
       />
     </div>
   );

@@ -86,6 +86,22 @@ export async function POST(req: NextRequest) {
       changelog,
     });
 
+    // Registrar log de auditoría
+    await dbService.createAuditLog({
+      user_id: user.id,
+      action: 'DELIVERY_UPLOAD',
+      project_id: project.id,
+      project_title: project.title,
+      details: `Subió build ${fileName} (${(r2Result.size / (1024 * 1024)).toFixed(2)} MB) versión ${version}`,
+      metadata: {
+        deliveryId: delivery.id,
+        version: delivery.version,
+        fileName: delivery.file_name,
+        fileSize: r2Result.size,
+        changelog: delivery.changelog,
+      },
+    });
+
     // 4. Si el proyecto estaba en desarrollo o testing, avanzar progreso a 100 si es RELEASE
     if (version.toUpperCase().includes('RELEASE')) {
       await dbService.updateProject(projectId, { status: 'completed', progress: 100 });

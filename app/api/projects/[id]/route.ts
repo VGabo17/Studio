@@ -11,6 +11,7 @@ const updateProjectSchema = z.object({
   title: z.string().min(3).optional(),
   description: z.string().min(5).optional(),
   assigned_to: z.string().nullable().optional(),
+  client_discord_webhook: z.string().url().nullable().optional(),
 });
 
 interface RouteParams {
@@ -45,20 +46,38 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   }
 
-  // Verificación granular de RBAC
-  const staff = isStaff(user.role);
-  if (!staff) {
-    return NextResponse.json({ error: 'Solo miembros autorizados del staff pueden modificar proyectos' }, { status: 403 });
-  }
-
   const existingProject = await dbService.getProjectById(id);
   if (!existingProject) {
     return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 });
   }
 
+  const staff = isStaff(user.role);
+  const isOwner = existingProject.client_id === user.id;
+
+  if (!staff && !isOwner) {
+    return NextResponse.json({ error: 'Acceso no autorizado a este proyecto' }, { status: 403 });
+  }
+
   try {
     const body = await req.json();
     const validated = updateProjectSchema.parse(body);
+
+    if (!staff) {
+      // Clientes únicamente pueden configurar su webhook personal de Discord
+      if (
+        validated.status !== undefined ||
+        validated.progress !== undefined ||
+        validated.price !== undefined ||
+        validated.title !== undefined ||
+        validated.description !== undefined ||
+        validated.assigned_to !== undefined
+      ) {
+        return NextResponse.json(
+          { error: 'Los clientes únicamente pueden configurar sus preferencias de notificaciones Discord' },
+          { status: 403 }
+        );
+      }
+    }
 
     // REGLA GRANULAR 1: Solo developer_senior y admin pueden marcar 'completed'
     if (validated.status === 'completed' && !canCompleteProject(user.role)) {
@@ -86,10 +105,55 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     const previousStatus = existingProject.status;
     const previousProgress = existingProject.progress;
+    const previousPrice = existingProject.price;
 
     const updated = await dbService.updateProject(id, validated);
     if (!updated) {
       return NextResponse.json({ error: 'Error al actualizar el proyecto' }, { status: 500 });
+    }
+
+    // Registrar logs de auditoría para acciones del staff
+    if (staff) {
+      if (validated.status && validated.status !== previousStatus) {
+        await dbService.createAuditLog({
+          user_id: user.id,
+          action: 'STATUS_CHANGE',
+          project_id: updated.id,
+          project_title: updated.title,
+          details: `Cambió el estado de "${previousStatus}" a "${validated.status}"`,
+          metadata: { previousStatus, newStatus: validated.status },
+        });
+      }
+      if (validated.progress !== undefined && validated.progress !== previousProgress) {
+        await dbService.createAuditLog({
+          user_id: user.id,
+          action: 'PROGRESS_UPDATE',
+          project_id: updated.id,
+          project_title: updated.title,
+          details: `Actualizó el progreso de desarrollo de ${previousProgress}% a ${validated.progress}%`,
+          metadata: { previousProgress, newProgress: validated.progress },
+        });
+      }
+      if (validated.price !== undefined && validated.price !== previousPrice) {
+        await dbService.createAuditLog({
+          user_id: user.id,
+          action: 'PRICE_UPDATE',
+          project_id: updated.id,
+          project_title: updated.title,
+          details: `Fijó la tarifa acordada en $${validated.price} USD (anterior: ${previousPrice !== null ? `$${previousPrice} USD` : 'Sin cotizar'})`,
+          metadata: { previousPrice, newPrice: validated.price },
+        });
+      }
+      if (validated.assigned_to !== undefined && validated.assigned_to !== existingProject.assigned_to) {
+        await dbService.createAuditLog({
+          user_id: user.id,
+          action: 'PROJECT_ASSIGNMENT',
+          project_id: updated.id,
+          project_title: updated.title,
+          details: `Reasignó el proyecto al desarrollador con ID ${validated.assigned_to || 'Sin asignar'}`,
+          metadata: { previousAssignee: existingProject.assigned_to, newAssignee: validated.assigned_to },
+        });
+      }
     }
 
     // Si el estado o progreso cambian sustancialmente, disparar Discord Webhook
@@ -103,6 +167,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         status: updated.status,
         previousStatus,
         progress: updated.progress,
+        customWebhookUrl: updated.client_discord_webhook || undefined,
       });
     }
 

@@ -73,6 +73,20 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    // Registro en base de datos de auditoría
+    await dbService.createAuditLog({
+      user_id: currentUser.id,
+      action: 'RATE_UPDATE',
+      project_id: null,
+      project_title: `Tarifa: ${updated.name}`,
+      details: `Actualizó tarifa base de "${updated.name}" a $${updated.base_price} USD (Entrega: ${updated.delivery_time})`,
+      metadata: {
+        service_type: updated.service_type,
+        base_price: updated.base_price,
+        delivery_time: updated.delivery_time,
+      },
+    });
+
     // Registro de auditoría a Discord
     await sendDiscordNotification('STATUS_CHANGED', {
       projectId: `RATE-${parsed.data.service_type.toUpperCase()}`,
